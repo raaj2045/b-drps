@@ -1,0 +1,98 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8f8f8;
+  padding: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+ 
+  font-size: 40px;
+  margin-right: 10px;
+}
+
+.profile {
+  font-size: 40px;
+  margin-right: 10px;
+}
+
+.navbar-right a {
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+}
+
+/* Manuscript Writing Section styles */
+.upload-page {
+  margin: 20px;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.upload-page h1 {
+  margin-bottom: 20px;
+}
+
+.upload-form label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.upload-form input,
+.upload-form textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.upload-form input[type="file"] {
+  display: block;
+  margin-top: 5px;
+}
+
+.upload-form .button-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.upload-button {
+  padding: 10px 20px;
+  background-color: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.reset-button {
+  padding: 10px 20px;
+  background-color: #f44336;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.upload-success-message {
+  margin-top: 10px;
+  color: green;
+}
+
+
+.footer {
+  background-color: #f8f8f8;
+  padding: 20px;
+  text-align: center;
+}

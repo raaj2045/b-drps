@@ -1,0 +1,11 @@
+table,th,td,tr {
+    border: 1px solid black;
+}
+
+table {
+    width: 100%;
+}
+
+.tab-head {
+    background-color: #b272ea;
+}
