@@ -550,6 +550,11 @@ function App() {
 
   async function getPaperinfo() {
     try {
+      if (!state.maincontract) return;
+      if (!ipfslink) {
+        alert("No file uploaded yet. Click 'Upload File' first and wait for the success message before clicking submit.");
+        return;
+      }
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -586,6 +591,7 @@ function App() {
   // Function For Getting paper To EIC Page
   async function RecievedByEIC() {
     try {
+      if (!state.maincontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -618,6 +624,7 @@ function App() {
   // For Getting Papers Which Approoved By EIC  
   async function getApprovedByEIC() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -640,6 +647,7 @@ function App() {
   //Function To Get Papers On AE Page
   async function ReceivedbyAE() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -671,6 +679,7 @@ function App() {
   // Function For Getting Papers Which Approved By AE
   async function getApprovedByAE() {
     try {
+      if (!state.maincontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -692,6 +701,7 @@ function App() {
   // Function For Getting Paper on Reviewer Page
   async function RecievedByReviewer() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -708,6 +718,7 @@ function App() {
   // For Getting Papers Which are Review ed By Reviewers
   async function getReviewedbyReviewers() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -730,6 +741,7 @@ function App() {
   // Function for getting Paper Back after Reviewed By Reviewer
   async function ReturntoAE() {
     try {
+      if (!state.maincontract) return;
       // Accessing Metamask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -750,6 +762,7 @@ function App() {
   // Function For Get Papers Reviewed By AE
   async function ReviewedbyAE() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -795,6 +808,7 @@ function App() {
   // Function For Get Paper After Reviewed By AE
   async function ReturntoEIC() {
     try {
+      if (!state.decisioncontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { decisioncontract } = state;
@@ -830,6 +844,7 @@ function App() {
   // Function for Get Published Papers
   async function getPublishPaper() {
     try {
+      if (!state.decisioncontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { decisioncontract } = state;
@@ -848,6 +863,7 @@ function App() {
   // Function for Getting Papers Wjich are Published Or Rejected On Author Page
   async function ReturnToAuthor() {
     try {
+      if (!state.decisioncontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { decisioncontract } = state;

@@ -21,7 +21,7 @@ const PaperdataEIC = (props) => {
                   <tr bgcolor = " #b272ea"><th>Index</th><th>{index}</th></tr>
                   <tr><th bgcolor = "#e2a1f2">Abstract of Paper</th><td>{paper.abstractofpaper}</td></tr>
                   <tr><th bgcolor = "#e2a1f2">Title of Paper</th><td>{paper.papertitle}</td></tr>
-                  <tr><th bgcolor = "#e2a1f2">Link of Paper</th><td><strong><a href={paper.linkofpaper} target='_blank' rel="noreferrer">View Paper</a></strong></td></tr>
+                  <tr><th bgcolor = "#e2a1f2">Link of Paper</th><td>{paper.linkofpaper ? <strong><a href={paper.linkofpaper} target='_blank' rel="noreferrer">View Paper</a></strong> : <em>(no link stored)</em>}</td></tr>
                   <tr><th bgcolor = "#e2a1f2">Assign to AE</th><td>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
