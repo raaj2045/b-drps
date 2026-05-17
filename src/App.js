@@ -3,7 +3,6 @@
 
 import './App.css';
 import Web3 from "web3";
-import { Web3Storage } from 'web3.storage';
 import { useState, useEffect } from "react";
 import Auth from "./contract_abi/Auth.json";
 import Main from "./contract_abi/Main.json";
@@ -39,7 +38,8 @@ function App() {
   const [state, setState] = useState({ web3: null, authcontract: null, maincontract: null, decisioncontract: null });
   // useEffect is for calling smart contracts when state change and component render
   useEffect(() => {
-    const provider = new Web3.providers.HttpProvider("HTTP://127.0.0.1:7545")
+    const rpcUrl = process.env.REACT_APP_RPC_URL || "http://127.0.0.1:8545";
+    const provider = new Web3.providers.HttpProvider(rpcUrl)
     async function template() {
       const web3 = new Web3(provider);
       console.log(web3);
@@ -422,21 +422,36 @@ function App() {
         console.log('No file selected');
         return;
       }
-      // For Uploading The File To IPFS
-      const storageClient = new Web3Storage({ token: process.env.REACT_APP_WEB3_STORAGE_API_KEY });
+      // For Uploading The File To IPFS via Pinata
+      setUploadingFile(true);
 
-      const fileBlob = new Blob([selectedFile]);
-      const file = new File([fileBlob], selectedFile.name, { type: selectedFile.type });
+      const pinataFormData = new FormData();
+      pinataFormData.append("file", selectedFile);
 
+      const pinataResponse = await fetch(
+        "https://api.pinata.cloud/pinning/pinFileToIPFS",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.REACT_APP_PINATA_JWT}`,
+          },
+          body: pinataFormData,
+        }
+      );
 
-      setUploadingFile(true); // Set uploadingFile to true when starting the upload
+      if (!pinataResponse.ok) {
+        const errText = await pinataResponse.text();
+        throw new Error(
+          `Pinata upload failed: ${pinataResponse.status} ${errText}`
+        );
+      }
 
-      // Upload the file to web3 storage
-      const cid = await storageClient.put([file]);
-      const link = "https://ipfs.io/ipfs/" + cid;
+      const { IpfsHash: cid } = await pinataResponse.json();
+      const gateway =
+        process.env.REACT_APP_PINATA_GATEWAY || "gateway.pinata.cloud";
+      const link = `https://${gateway}/ipfs/${cid}`;
       console.log(link);
       setIpfslink(link);
-      console.log(ipfslink);
 
       // Hande Form Data
       const formData = {
