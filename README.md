@@ -1,67 +1,126 @@
 # Blockchain-based Decentralized Research Publishing System (B-DRPS)
 
-## How to run the Dapp?
+Revised codebase accompanying the peer-review response. The published baseline
+is preserved at tag `v1.0-paper`; ongoing revision work targets the
+`revision-2026` branch.
 
-1. Install Prerequisites
+## Stack
 
-- Download and install NodeJS from [Download](https://nodejs.org/en/download/)
+- **Smart contracts** — Solidity 0.8.19 (`Auth`, `Main`, `Decision`)
+- **Build / deploy** — Hardhat 2 (replaces Truffle, sunset Sept 2023)
+- **Frontend** — React 18 + web3.js 1.x, MetaMask for signing
+- **IPFS pinning** — Pinata (replaces Web3.storage, discontinued late 2023)
 
-- Install Visual Studio Code from [Download](https://code.visualstudio.com/download)
+## Prerequisites
 
-- Install Ganache From  [Download](https://trufflesuite.com/ganache/)
+- Node.js 18+ and npm
+- Git
+- [MetaMask](https://metamask.io/download/) browser extension
+- A [Pinata](https://app.pinata.cloud) account (free tier is sufficient for testing)
 
-- Install Metamask from [Download](https://metamask.io/download/)
+## Setup
 
-2. Make account on Web3.Storage
+### 1. Clone
 
-- Get Api Key from Web3.Storage[Web3.Storage](https://web3.storage/)
-
-- Register and login to your account and Click on Account/create Api Token
-
-- Make .env file in a App directory and copy Api token into it
-
-```
-REACT_APP_WEB3_STORAGE_API_KEY = PASTE YOUR TOKEN HERE
-
-```
-
-2. Clone the Project
-
-```
-$ git clone https://github.com/Rushik-Ghuntala/blockchain-based-decentralized-research-publishing-system.git
-
-```
-3. Install all the Dependencies
-
-```
-$ cd blockchain-based-decentralized-research-publishing-system
-
-$ npm install
-
-```
-4. Run the local blockchain using desktop version of ganache 
-
-5. Compile and migrate all the contracts using the truffle 
-
-```
-$ truffle migrate --reset
-
-```
-6. Log in your MetaMask and import the demo accounts to interact with the App.
-
-- For the demo accounts go to the ganache desktop make one demo workspace and you can see 10 demo accounts with 100 ETH
-
-- Now click on key icon you get private key of the accounts and import it to the metamask, add minimum 8 accounts for perfect testing.
-
-- For more information, [click here](https://www.geeksforgeeks.org/how-to-set-up-ganche-with-metamask/)
-
-7. Now run the application 
-
-```
-$ npm start
-
+```bash
+git clone https://github.com/raaj2045/b-drps.git
+cd b-drps
 ```
 
-8. now you are able to do interaction with the application.
+### 2. Install dependencies
 
-Note: Here, we make journal is pre-registered so if you want to do testing then uncomment the line no. 36 in signup.js file because in the code the journal is not register he can log in directly.
+```bash
+npm install
+```
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and fill in:
+
+- `REACT_APP_PINATA_JWT` — create at https://app.pinata.cloud/developers/api-keys
+  (give it `pinFileToIPFS` permission, paste the JWT)
+- `REACT_APP_PINATA_GATEWAY` — leave as `gateway.pinata.cloud` for testing, or
+  create a dedicated gateway at https://app.pinata.cloud/gateway
+- `REACT_APP_RPC_URL` — leave as `http://127.0.0.1:8545` for local Hardhat
+
+### 4. Compile contracts
+
+```bash
+npm run compile
+```
+
+This compiles all three contracts and writes Truffle-shape ABI JSON files into
+`src/contract_abi/` for the frontend to import.
+
+### 5. Start the local blockchain (terminal A)
+
+```bash
+npm run node
+```
+
+Leave this running. It starts a Hardhat node on `http://127.0.0.1:8545` and
+prints 20 pre-funded accounts with their private keys — you'll import some of
+these into MetaMask in step 7.
+
+### 6. Deploy contracts (terminal B)
+
+```bash
+npm run deploy:local
+```
+
+This deploys `Auth`, `Main`, `Decision` to the local node and writes their
+addresses into `src/contract_abi/<Name>.json` under `networks[31337]`. Re-run
+this whenever you restart the node or modify contracts.
+
+### 7. Configure MetaMask
+
+- Add the Hardhat network: RPC URL `http://127.0.0.1:8545`, chain ID `31337`,
+  currency `ETH`
+- Import at least 8 accounts using the private keys printed by `npm run node`
+  (one for Journal, one for EiC, one for AE, several for Reviewers and Authors)
+
+### 8. Run the frontend (terminal B, after step 6 completes)
+
+```bash
+npm start
+```
+
+The dapp opens at http://localhost:3000.
+
+## Demo accounts and journal pre-registration
+
+The `JOURNAL` role is the only one that signs up without requiring approval
+from a higher-power account — it bootstraps the membership tree. The first
+account you sign up as `JOURNAL` becomes the root authority and can approve
+EiC requests; EiC then approves AE; AE approves Reviewers and Authors.
+
+For testing convenience, register the first MetaMask account as a journal,
+then use the remaining imported accounts to test the request → approve flow
+for each role.
+
+## Running tests
+
+Test suite added in P2 (`test/contract-coverage` branch). Stub for now:
+
+```bash
+npm test
+```
+
+## Project layout
+
+```
+contracts/         Auth.sol, Main.sol, Decision.sol (no ABI changes in this revision)
+scripts/           deploy.js, build-frontend-abis.js
+src/               React frontend (App.js + Components/)
+src/contract_abi/  Frontend-imported ABI JSONs (rewritten by `npm run compile`)
+hardhat.config.js  Solidity 0.8.19, localhost/hardhat networks (Sepolia added in P4)
+.env.example       Template for required environment variables
+```
+
+## License
+
+LGPL — see `LICENSE`.
