@@ -55,17 +55,22 @@ const signup = (props) => {
             </label>
           </div>
           <div className='input'>
-            <label><strong>Select Your Metamask Account Address:</strong>
+            <label><strong>Your MetaMask Account Address:</strong>
               <input
                 className="p-1 text-center"
                 type="text"
-                placeholder="Enter Your useraddress"
-                onChange={(e) => handleChange(e)}
+                placeholder="Connect MetaMask to populate"
                 name="useraddress"
                 value={memberInfo.useraddress}
+                readOnly
                 required
               />
             </label>
+            <p style={{ fontSize: '0.85em', marginTop: '0.25em' }}>
+              Auto-detected from your active MetaMask account. The signup
+              transaction is signed by this same address, so they must match.
+              Switch accounts in MetaMask to register a different one.
+            </p>
           </div>
           <div className='btn-sign'>
             <Link to="/"><button onClick={requestUser}>Sign Up</button></Link>

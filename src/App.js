@@ -65,6 +65,66 @@ function App() {
   }, []);
   console.log(state)
 
+  // Auto-detect active MetaMask account and resolve role from Auth contract.
+  // Listens for accountsChanged / chainChanged so the dapp's identity follows
+  // the wallet's active account instead of requiring a manual login click.
+  useEffect(() => {
+    if (!state.authcontract) return;
+    if (!window.ethereum) {
+      setUserLoggedIn(false);
+      return;
+    }
+
+    async function resolveRole(activeAddress) {
+      if (!activeAddress) {
+        setUserLoggedIn(false);
+        setLoggedInUserInfo({ name: "", role: "", email: "", userAddress: "" });
+        setLoginUserAddress("");
+        setMemberInfo((prev) => ({ ...prev, useraddress: "" }));
+        return;
+      }
+      setLoginUserAddress(activeAddress);
+      setMemberInfo((prev) => ({ ...prev, useraddress: activeAddress }));
+      try {
+        const userExist = await state.authcontract.methods
+          .memberExistOrNot(activeAddress)
+          .call({ from: activeAddress });
+        if (userExist) {
+          const member = await state.authcontract.methods
+            .findMember(activeAddress, false)
+            .call({ from: activeAddress });
+          setLoggedInUserInfo(member);
+          setUserLoggedIn(true);
+        } else {
+          setUserLoggedIn(false);
+          setLoggedInUserInfo({ name: "", role: "", email: "", userAddress: "" });
+        }
+      } catch (e) {
+        console.error("role lookup failed:", e);
+        setUserLoggedIn(false);
+      }
+    }
+
+    window.ethereum
+      .request({ method: "eth_accounts" })
+      .then((accounts) => resolveRole(accounts && accounts[0]))
+      .catch((e) => console.error("eth_accounts failed:", e));
+
+    const handleAccountsChanged = (accounts) =>
+      resolveRole(accounts && accounts[0]);
+    const handleChainChanged = () => window.location.reload();
+
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    window.ethereum.on("chainChanged", handleChainChanged);
+
+    return () => {
+      if (window.ethereum.removeListener) {
+        window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+        window.ethereum.removeListener("chainChanged", handleChainChanged);
+      }
+    };
+  }, [state.authcontract]);
+
 
 
   // Auth Contract -----------------------------------------------------------------------------------------------------------------------
@@ -813,9 +873,8 @@ function App() {
             path="/"
             element={
               <Login
-                SignIn={SignIn}
-                setUserLoggedIn={setUserLoggedIn}
-                setLoggedInUserInfo={setLoggedInUserInfo}
+                userLoggedIn={userLoggedIn}
+                loginUserAddress={loginUserAddress}
               />
             }
           ></Route>
