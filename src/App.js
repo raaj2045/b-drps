@@ -945,6 +945,8 @@ function App() {
                 returntoauthorarray={returntoauthorarray}
                 loggedInUserInfo={loggedInUserInfo}
                 reviewedbyAEarray={reviewedbyAEarray}
+                recievedByEICarray={recievedByEICarray}
+                RecievedByEIC={RecievedByEIC}
               />
             }
           ></Route>
