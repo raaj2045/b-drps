@@ -65,6 +65,68 @@ function App() {
   }, []);
   console.log(state)
 
+  // Auto-detect active MetaMask account and resolve role from Auth contract.
+  // Listens for accountsChanged / chainChanged so the dapp's identity follows
+  // the wallet's active account instead of requiring a manual login click.
+  useEffect(() => {
+    if (!state.authcontract) return;
+    if (!window.ethereum) {
+      setUserLoggedIn(false);
+      return;
+    }
+
+    async function resolveRole(activeAddress) {
+      if (!activeAddress) {
+        setUserLoggedIn(false);
+        setLoggedInUserInfo({ name: "", role: "", email: "", userAddress: "" });
+        setLoginUserAddress("");
+        setMemberInfo((prev) => ({ ...prev, useraddress: "" }));
+        setMetaMaskAddress("");
+        return;
+      }
+      setLoginUserAddress(activeAddress);
+      setMemberInfo((prev) => ({ ...prev, useraddress: activeAddress }));
+      setMetaMaskAddress(activeAddress);
+      try {
+        const userExist = await state.authcontract.methods
+          .memberExistOrNot(activeAddress)
+          .call({ from: activeAddress });
+        if (userExist) {
+          const member = await state.authcontract.methods
+            .findMember(activeAddress, false)
+            .call({ from: activeAddress });
+          setLoggedInUserInfo(member);
+          setUserLoggedIn(true);
+        } else {
+          setUserLoggedIn(false);
+          setLoggedInUserInfo({ name: "", role: "", email: "", userAddress: "" });
+        }
+      } catch (e) {
+        console.error("role lookup failed:", e);
+        setUserLoggedIn(false);
+      }
+    }
+
+    window.ethereum
+      .request({ method: "eth_accounts" })
+      .then((accounts) => resolveRole(accounts && accounts[0]))
+      .catch((e) => console.error("eth_accounts failed:", e));
+
+    const handleAccountsChanged = (accounts) =>
+      resolveRole(accounts && accounts[0]);
+    const handleChainChanged = () => window.location.reload();
+
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    window.ethereum.on("chainChanged", handleChainChanged);
+
+    return () => {
+      if (window.ethereum.removeListener) {
+        window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+        window.ethereum.removeListener("chainChanged", handleChainChanged);
+      }
+    };
+  }, [state.authcontract]);
+
 
 
   // Auth Contract -----------------------------------------------------------------------------------------------------------------------
@@ -414,20 +476,33 @@ function App() {
     setAbstract(event.target.value);
   };
 
-  // For Submit The Form 
+  // Single-button submit: validates -> uploads to Pinata -> registers paper on
+  // Main contract -> sends to EiC. Returns true on full success, false otherwise.
+  // The form component awaits the result and navigates only on success.
   const handleFormSubmit = async (event) => {
     event.preventDefault();
+    if (!selectedFile) {
+      alert("No file selected. Pick a PDF before submitting.");
+      return false;
+    }
+    if (!state.maincontract) {
+      alert("Contracts not yet initialized. Wait a moment and try again.");
+      return false;
+    }
+    if (!process.env.REACT_APP_PINATA_JWT) {
+      alert(
+        "REACT_APP_PINATA_JWT is missing from .env. Copy .env.example, paste your Pinata JWT, and restart npm start."
+      );
+      return false;
+    }
+
+    let link;
     try {
-      if (!selectedFile) {
-        console.log('No file selected');
-        return;
-      }
-      // For Uploading The File To IPFS via Pinata
       setUploadingFile(true);
 
+      // 1. Pin file to IPFS via Pinata
       const pinataFormData = new FormData();
       pinataFormData.append("file", selectedFile);
-
       const pinataResponse = await fetch(
         "https://api.pinata.cloud/pinning/pinFileToIPFS",
         {
@@ -438,39 +513,40 @@ function App() {
           body: pinataFormData,
         }
       );
-
       if (!pinataResponse.ok) {
         const errText = await pinataResponse.text();
         throw new Error(
           `Pinata upload failed: ${pinataResponse.status} ${errText}`
         );
       }
-
       const { IpfsHash: cid } = await pinataResponse.json();
       const gateway =
         process.env.REACT_APP_PINATA_GATEWAY || "gateway.pinata.cloud";
-      const link = `https://${gateway}/ipfs/${cid}`;
-      console.log(link);
+      link = `https://${gateway}/ipfs/${cid}`;
       setIpfslink(link);
+      console.log("Pinned at:", link);
 
-      // Hande Form Data
-      const formData = {
-        name,
-        email,
-        title,
-        abstract,
-        ipfslink,
-        address: metaMaskAddress,
-        orcid
-      };
+      // 2. Register paper on Main contract (uses freshly-obtained link, not state)
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      const author = metaMaskAddress || accounts[0];
+      await state.maincontract.methods
+        .getPaperInfo(name, email, abstract, title, link, author)
+        .send({ from: accounts[0], gas: 2000000 });
 
-      console.log('Form data:', formData);
+      // 3. Push the registered paper into EiC's queue
+      await state.maincontract.methods
+        .sendToEIC()
+        .send({ from: accounts[0], gas: 2000000 });
+
       setUploadSuccess(true);
-
+      handleReset();
+      alert(`Paper submitted!\nPinned at: ${link}`);
+      return true;
     } catch (error) {
-      alert('Error uploading file:', error);
+      alert(`Submission failed: ${error.message || error}`);
+      return false;
     } finally {
-      setUploadingFile(false); // Set uploadingFile to false after the upload completes
+      setUploadingFile(false);
     }
   };
 
@@ -490,6 +566,11 @@ function App() {
 
   async function getPaperinfo() {
     try {
+      if (!state.maincontract) return;
+      if (!ipfslink) {
+        alert("No file uploaded yet. Click 'Upload File' first and wait for the success message before clicking submit.");
+        return;
+      }
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -526,6 +607,7 @@ function App() {
   // Function For Getting paper To EIC Page
   async function RecievedByEIC() {
     try {
+      if (!state.maincontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -558,6 +640,7 @@ function App() {
   // For Getting Papers Which Approoved By EIC  
   async function getApprovedByEIC() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -580,6 +663,7 @@ function App() {
   //Function To Get Papers On AE Page
   async function ReceivedbyAE() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -611,6 +695,7 @@ function App() {
   // Function For Getting Papers Which Approved By AE
   async function getApprovedByAE() {
     try {
+      if (!state.maincontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -632,6 +717,7 @@ function App() {
   // Function For Getting Paper on Reviewer Page
   async function RecievedByReviewer() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -648,6 +734,7 @@ function App() {
   // For Getting Papers Which are Review ed By Reviewers
   async function getReviewedbyReviewers() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -670,6 +757,7 @@ function App() {
   // Function for getting Paper Back after Reviewed By Reviewer
   async function ReturntoAE() {
     try {
+      if (!state.maincontract) return;
       // Accessing Metamask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -690,6 +778,7 @@ function App() {
   // Function For Get Papers Reviewed By AE
   async function ReviewedbyAE() {
     try {
+      if (!state.maincontract) return;
       // Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { maincontract } = state;
@@ -735,6 +824,7 @@ function App() {
   // Function For Get Paper After Reviewed By AE
   async function ReturntoEIC() {
     try {
+      if (!state.decisioncontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { decisioncontract } = state;
@@ -770,6 +860,7 @@ function App() {
   // Function for Get Published Papers
   async function getPublishPaper() {
     try {
+      if (!state.decisioncontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { decisioncontract } = state;
@@ -788,6 +879,7 @@ function App() {
   // Function for Getting Papers Wjich are Published Or Rejected On Author Page
   async function ReturnToAuthor() {
     try {
+      if (!state.decisioncontract) return;
       //Accessing MetaMask Account
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       const { decisioncontract } = state;
@@ -813,9 +905,8 @@ function App() {
             path="/"
             element={
               <Login
-                SignIn={SignIn}
-                setUserLoggedIn={setUserLoggedIn}
-                setLoggedInUserInfo={setLoggedInUserInfo}
+                userLoggedIn={userLoggedIn}
+                loginUserAddress={loginUserAddress}
               />
             }
           ></Route>
@@ -854,6 +945,8 @@ function App() {
                 returntoauthorarray={returntoauthorarray}
                 loggedInUserInfo={loggedInUserInfo}
                 reviewedbyAEarray={reviewedbyAEarray}
+                recievedByEICarray={recievedByEICarray}
+                RecievedByEIC={RecievedByEIC}
               />
             }
           ></Route>
@@ -966,8 +1059,6 @@ function App() {
                 uploadingFile={uploadingFile}
                 handleReset={handleReset}
                 uploadSuccess={uploadSuccess}
-                sendToEIC={sendToEIC}
-                getPaperinfo={getPaperinfo}
                 handleOrcidChange={handleOrcidChange}
                 orcid={orcid}
                 selectedFile={selectedFile}

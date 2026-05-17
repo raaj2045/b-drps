@@ -8,7 +8,7 @@ const PaperdataReturntoEIC = (props) => {
 
   useEffect(() => {
     ReturntoEIC();
-  })
+  }, [])
 
 if(userLoggedIn) {
   return (
@@ -23,7 +23,7 @@ if(userLoggedIn) {
                   <tr bgcolor = " #b272ea"><th>Index</th><th>{index}</th></tr>
                   <tr><th bgcolor = "#e2a1f2">Abstract of Paper</th><td>{paper.abstractofpaper}</td></tr>
                   <tr><th bgcolor = "#e2a1f2">Title of Paper</th><td>{paper.papertitle}</td></tr>
-                  <tr><th bgcolor = "#e2a1f2">Link of Paper</th><td><strong><a href={paper.linkofpaper} target='_blank' rel="noreferrer">View Paper</a></strong></td></tr>
+                  <tr><th bgcolor = "#e2a1f2">Link of Paper</th><td>{paper.linkofpaper ? <strong><a href={paper.linkofpaper} target='_blank' rel="noreferrer">View Paper</a></strong> : <em>(no link stored)</em>}</td></tr>
                   <tr><th bgcolor = "#e2a1f2">Reviewer's Remarks</th><td>{paper.reviewofreviewer}</td></tr>
                   <tr><th bgcolor = "#e2a1f2">AE's Remarks</th><td>{paper.reviewofAE}</td></tr>
                   <tr><th bgcolor = "#e2a1f2">Publish</th><td>
@@ -34,8 +34,9 @@ if(userLoggedIn) {
                         fill="currentColor"
                         className="bi bi-check-circle"
                         viewBox="0 0 16 16"
-                        onClick={() => {
-                          EICFinalDecision(true, "Congratulations " + paper.name + "🥳🎉!!  Your Paper Got Published.");
+                        onClick={async () => {
+                          await EICFinalDecision(true, "Congratulations " + paper.name + "🥳🎉!!  Your Paper Got Published.");
+                          await ReturntoEIC();
                         }}
                       >
                         <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
@@ -43,7 +44,7 @@ if(userLoggedIn) {
                       </svg>
                     </td>
                     </tr>
-                    <tr><th bgcolor = "#e2a1f2">Return to Author</th><td><button onClick={() => { EICFinalDecision(false, "You Need To Update Paper Based On Reviews."); }}>x</button></td></tr>
+                    <tr><th bgcolor = "#e2a1f2">Return to Author</th><td><button onClick={async () => { await EICFinalDecision(false, "You Need To Update Paper Based On Reviews."); await ReturntoEIC(); }}>x</button></td></tr>
                   <br></br>
                 </>
               );
