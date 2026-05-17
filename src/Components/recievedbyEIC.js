@@ -6,7 +6,7 @@ const PaperdataEIC = (props) => {
   const { recievedByEICarray, EICapproval, RecievedByEIC, userLoggedIn } = props;
   useEffect(() => {
     RecievedByEIC();
-  })
+  }, [])
 
   if (userLoggedIn) {
   return (

@@ -29,7 +29,7 @@ const PaperdataReturntoAE = (props) => {
 
   useEffect(() => {
     ReturntoAE();
-  })
+  }, [])
 
   if(userLoggedIn) {
   return (

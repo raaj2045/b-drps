@@ -8,7 +8,7 @@ const ApprovedByAEpage = (props) => {
 
   useEffect(() => {
     getApprovedByAE();
-  })
+  }, [])
 
 if (userLoggedIn) {
   return (

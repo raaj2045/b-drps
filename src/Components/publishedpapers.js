@@ -7,7 +7,7 @@ const Publishedpaperspage = (props) => {
 
   useEffect(() => {
     getPublishPaper();
-  })
+  }, [])
 
   return (
     <>

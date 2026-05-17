@@ -8,7 +8,7 @@ const PaperdataReturntoEIC = (props) => {
 
   useEffect(() => {
     ReturntoEIC();
-  })
+  }, [])
 
 if(userLoggedIn) {
   return (

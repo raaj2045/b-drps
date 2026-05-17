@@ -7,7 +7,7 @@ const PaperdataAE = (props) => {
 
   useEffect(() => {
     ReceivedbyAE();
-  })
+  }, [])
 
   if (userLoggedIn) {
   return (

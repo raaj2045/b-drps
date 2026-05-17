@@ -28,7 +28,7 @@ const PaperdataReviewer = (props) => {
 
   useEffect(() => {
     RecievedByReviewer();
-  })
+  }, [])
 
   if( userLoggedIn ) {
   return (

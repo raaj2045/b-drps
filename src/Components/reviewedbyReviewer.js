@@ -7,7 +7,7 @@ const ReviewedbyReviewerpage = (props) => {
 
   useEffect(() => {
     getReviewedbyReviewers();
-  },)
+  }, [])
 
   if(userLoggedIn) {
   return (

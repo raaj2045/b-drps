@@ -7,7 +7,7 @@ const ApprovedByEICpage = (props) => {
 
   useEffect(() => {
     getApprovedByEIC();
-  },)
+  }, [])
 
   if(userLoggedIn) {
       return (

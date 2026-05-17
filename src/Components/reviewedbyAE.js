@@ -7,7 +7,7 @@ const ReviewedbyAEpage = (props) => {
 
   useEffect(() => {
     ReviewedbyAE();
-  })
+  }, [])
 
   if(userLoggedIn) {
   return (

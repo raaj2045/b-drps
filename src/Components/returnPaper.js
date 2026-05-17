@@ -7,7 +7,7 @@ const ReturnAuthorpage = (props) => {
 
   useEffect(() => {
     ReturnToAuthor();
-  })
+  }, [])
 
   if(userLoggedIn) {
   return (
