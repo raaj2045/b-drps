@@ -1,14 +1,26 @@
 import React from 'react';
 import './authorpaper.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 
-// Author Paper Submit Page Component 
+// Author Paper Submit Page Component
 const AuthorPages = (props) => {
 
   const { handleFormSubmit, name, handleNameChange, metaMaskAddress, loadMetaMaskAddress, email, handleEmailChange,
     title, handleTitleChange, abstract, handleAbstractChange, handleFileChange, uploadingFile, handleReset, uploadSuccess,
-    sendToEIC, getPaperinfo, orcid, handleOrcidChange, dimensions, userLoggedIn } = props;
+    orcid, handleOrcidChange, dimensions, userLoggedIn } = props;
+
+  const navigate = useNavigate();
+
+  // Wraps handleFormSubmit so we navigate ONLY on success. Failure paths
+  // (validation, Pinata upload, contract revert) keep the user on the form
+  // with the form fields preserved so they can retry.
+  const onSubmit = async (event) => {
+    const success = await handleFormSubmit(event);
+    if (success) {
+      navigate('/profile');
+    }
+  };
 
 if (userLoggedIn) {
   return (
@@ -23,7 +35,7 @@ if (userLoggedIn) {
         <br></br>
         <br></br>
         <div>
-          <form className="upload-form" onSubmit={handleFormSubmit}>
+          <form className="upload-form" onSubmit={onSubmit}>
 
             <div>
               <label>Name:</label>
@@ -40,7 +52,7 @@ if (userLoggedIn) {
               <label>MetaMask Address:</label>
               <input type="text" value={metaMaskAddress} readOnly />
               <button className="retrieve-button" type="button" onClick={loadMetaMaskAddress}>
-                Retrieve Address
+                Refresh
               </button>
             </div>
             <br></br>
@@ -78,26 +90,22 @@ if (userLoggedIn) {
               )}
             </div>
             <div className="button-container">
-              {dimensions && (<div>{dimensions.isA4 ? <button
-                className={`upload-button ${uploadingFile ? 'loading' : ''}`}
-                type="submit"
-                disabled={uploadingFile}
-                id="uploadbutton"
-              >
-                {uploadingFile ? 'Uploading...' : 'Upload File'}
-              </button> : <></>}</div>)}
-              {dimensions && (<div>{dimensions.isA4 ? 
-              <Link to='/profile'>
-                <button className="submit-button" type="button" onClick={() => { getPaperinfo(); sendToEIC(); handleReset(); }}>
-                submit
-              </button>
-              </Link>: <></>}</div>)}
+              {dimensions && dimensions.isA4 ? (
+                <button
+                  className={`submit-button ${uploadingFile ? 'loading' : ''}`}
+                  type="submit"
+                  disabled={uploadingFile}
+                  id="submitbutton"
+                >
+                  {uploadingFile ? 'Submitting…' : 'Submit Paper'}
+                </button>
+              ) : null}
               <button className="reset-button" type="button" onClick={handleReset}>
                 Reset
               </button>
             </div>
           </form>
-          {uploadSuccess && <p className="upload-success-message">File uploaded successfully!</p>}
+          {uploadSuccess && <p className="upload-success-message">Paper submitted successfully!</p>}
         </div>
         <br></br>
       </div>

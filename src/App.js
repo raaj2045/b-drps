@@ -81,10 +81,12 @@ function App() {
         setLoggedInUserInfo({ name: "", role: "", email: "", userAddress: "" });
         setLoginUserAddress("");
         setMemberInfo((prev) => ({ ...prev, useraddress: "" }));
+        setMetaMaskAddress("");
         return;
       }
       setLoginUserAddress(activeAddress);
       setMemberInfo((prev) => ({ ...prev, useraddress: activeAddress }));
+      setMetaMaskAddress(activeAddress);
       try {
         const userExist = await state.authcontract.methods
           .memberExistOrNot(activeAddress)
@@ -474,20 +476,33 @@ function App() {
     setAbstract(event.target.value);
   };
 
-  // For Submit The Form 
+  // Single-button submit: validates -> uploads to Pinata -> registers paper on
+  // Main contract -> sends to EiC. Returns true on full success, false otherwise.
+  // The form component awaits the result and navigates only on success.
   const handleFormSubmit = async (event) => {
     event.preventDefault();
+    if (!selectedFile) {
+      alert("No file selected. Pick a PDF before submitting.");
+      return false;
+    }
+    if (!state.maincontract) {
+      alert("Contracts not yet initialized. Wait a moment and try again.");
+      return false;
+    }
+    if (!process.env.REACT_APP_PINATA_JWT) {
+      alert(
+        "REACT_APP_PINATA_JWT is missing from .env. Copy .env.example, paste your Pinata JWT, and restart npm start."
+      );
+      return false;
+    }
+
+    let link;
     try {
-      if (!selectedFile) {
-        console.log('No file selected');
-        return;
-      }
-      // For Uploading The File To IPFS via Pinata
       setUploadingFile(true);
 
+      // 1. Pin file to IPFS via Pinata
       const pinataFormData = new FormData();
       pinataFormData.append("file", selectedFile);
-
       const pinataResponse = await fetch(
         "https://api.pinata.cloud/pinning/pinFileToIPFS",
         {
@@ -498,39 +513,40 @@ function App() {
           body: pinataFormData,
         }
       );
-
       if (!pinataResponse.ok) {
         const errText = await pinataResponse.text();
         throw new Error(
           `Pinata upload failed: ${pinataResponse.status} ${errText}`
         );
       }
-
       const { IpfsHash: cid } = await pinataResponse.json();
       const gateway =
         process.env.REACT_APP_PINATA_GATEWAY || "gateway.pinata.cloud";
-      const link = `https://${gateway}/ipfs/${cid}`;
-      console.log(link);
+      link = `https://${gateway}/ipfs/${cid}`;
       setIpfslink(link);
+      console.log("Pinned at:", link);
 
-      // Hande Form Data
-      const formData = {
-        name,
-        email,
-        title,
-        abstract,
-        ipfslink,
-        address: metaMaskAddress,
-        orcid
-      };
+      // 2. Register paper on Main contract (uses freshly-obtained link, not state)
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      const author = metaMaskAddress || accounts[0];
+      await state.maincontract.methods
+        .getPaperInfo(name, email, abstract, title, link, author)
+        .send({ from: accounts[0], gas: 2000000 });
 
-      console.log('Form data:', formData);
+      // 3. Push the registered paper into EiC's queue
+      await state.maincontract.methods
+        .sendToEIC()
+        .send({ from: accounts[0], gas: 2000000 });
+
       setUploadSuccess(true);
-
+      handleReset();
+      alert(`Paper submitted!\nPinned at: ${link}`);
+      return true;
     } catch (error) {
-      alert('Error uploading file:', error);
+      alert(`Submission failed: ${error.message || error}`);
+      return false;
     } finally {
-      setUploadingFile(false); // Set uploadingFile to false after the upload completes
+      setUploadingFile(false);
     }
   };
 
@@ -1041,8 +1057,6 @@ function App() {
                 uploadingFile={uploadingFile}
                 handleReset={handleReset}
                 uploadSuccess={uploadSuccess}
-                sendToEIC={sendToEIC}
-                getPaperinfo={getPaperinfo}
                 handleOrcidChange={handleOrcidChange}
                 orcid={orcid}
                 selectedFile={selectedFile}
