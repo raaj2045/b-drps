@@ -102,6 +102,48 @@ For testing convenience, register the first MetaMask account as a journal,
 then use the remaining imported accounts to test the request → approve flow
 for each role.
 
+## Deploy to Sepolia (public testnet)
+
+Required environment variables (add to `.env`):
+
+| Var | Where to get it |
+|---|---|
+| `SEPOLIA_RPC_URL` | Infura: https://app.infura.io → new key → Sepolia endpoint URL.  Alchemy: https://dashboard.alchemy.com → new app → Sepolia → HTTPS URL. |
+| `DEPLOYER_PRIVATE_KEY` | Generate a **fresh** wallet for this — don't reuse a mainnet key. In MetaMask: account menu → Add account → copy the new account's private key (with or without `0x` prefix). |
+| `ETHERSCAN_API_KEY` | Free from https://etherscan.io/myapikey. |
+
+Fund the deployer wallet with Sepolia ETH (a successful deploy of all three contracts uses well under 0.05 SepETH at typical gas):
+
+- https://www.alchemy.com/faucets/ethereum-sepolia
+- https://cloud.google.com/application/web3/faucet/ethereum/sepolia
+- https://www.infura.io/faucet/sepolia
+
+Then:
+
+```bash
+npm run compile                 # ensure ABIs match
+npx hardhat run scripts/deploy.js --network sepolia
+```
+
+This produces:
+
+- `deployments/sepolia.json` — chainId, deployer, timestamp, and the three contract addresses + tx hashes. **Committed** — reviewers reproduce by pointing at the same addresses.
+- `src/contract_abi/{Auth,Main,Decision}.json` — `networks[11155111]` populated, so the frontend can talk to the Sepolia deployment after pointing `REACT_APP_RPC_URL` at a public Sepolia endpoint.
+
+### Verify on Etherscan
+
+```bash
+npx hardhat verify --network sepolia <Auth_address>
+npx hardhat verify --network sepolia <Main_address>
+npx hardhat verify --network sepolia <Decision_address>
+```
+
+(Source files in this repo, deployed bytecode on Sepolia, and the verification result on Etherscan should all agree.)
+
+### Post-deploy sanity check
+
+After verification, anyone can read the deployed contracts directly from Etherscan's "Read Contract" tab — e.g., call `Auth.memberExistOrNot(0x…)` to confirm the contract is live and responding.
+
 ## Running tests
 
 Mocha/chai suite against the three Solidity contracts:
@@ -135,7 +177,8 @@ contracts/         Auth.sol, Main.sol, Decision.sol (no ABI changes in this revi
 scripts/           deploy.js, build-frontend-abis.js
 src/               React frontend (App.js + Components/)
 src/contract_abi/  Frontend-imported ABI JSONs (rewritten by `npm run compile`)
-hardhat.config.js  Solidity 0.8.19, localhost/hardhat networks (Sepolia added in P4)
+hardhat.config.js  Solidity 0.8.19; localhost, hardhat, sepolia networks
+deployments/       Per-network deployment manifests (sepolia.json committed)
 .env.example       Template for required environment variables
 ```
 
