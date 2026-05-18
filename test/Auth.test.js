@@ -1,3 +1,12 @@
+// Coverage note (P2 follow-up): solidity-coverage reports auth.sol at 13/14
+// branches (92.86%). The uncovered branch is the second require in the
+// request path (`require(memberExist[_userAddress] == false, "Member Exist
+// Already!!")`). It is dead-ish: the prior `memberRequested == false` require
+// catches duplicate requests, and the only state where memberExist is true
+// while memberRequested is false is a JOURNAL that's been direct-added --
+// which then takes the else branch via `role != "JOURNAL"` short-circuit
+// rather than the request branch. Reachable only if a JOURNAL re-registers
+// as another role with request=true; left untested as a non-paper concern.
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
