@@ -104,11 +104,29 @@ for each role.
 
 ## Running tests
 
-Test suite added in P2 (`test/contract-coverage` branch). Stub for now:
+Mocha/chai suite against the three Solidity contracts:
 
 ```bash
-npm test
+npm test                # run all contract tests
+npx hardhat coverage    # solidity-coverage report (HTML at ./coverage/)
 ```
+
+The suite covers registration paths, the EIC→AE→Reviewer→AE→EIC publication
+pipeline, and one end-to-end integration test that takes a paper from
+submission to `Decision.getPublishedpaper`. A handful of tests are marked
+`.skip` and tagged "P5" — they target architectural bugs (single shared
+`instanceofPaperStruct` in Main/Decision, `pop()` queue corruption,
+no-op false-branches in `Reviewerapproval` / `ReviewedByAE`, missing
+role-check modifiers) that will be addressed in `feat/security-hardening`.
+
+Current coverage on `revision-2026`:
+
+| Contract       | Statements | Branches | Functions | Lines |
+|----------------|-----------:|---------:|----------:|------:|
+| `auth.sol`     | 100%       | 92.86%   | 100%      | 100%  |
+| `main.sol`     | 100%       | 100%     | 100%      | 100%  |
+| `Decision.sol` | 100%       | 100%     | 100%      | 100%  |
+| **All**        | **100%**   | **94.74%** | **100%** | **100%** |
 
 ## Project layout
 
