@@ -31,3 +31,7 @@ yarn-error.log*
 /cache
 /typechain-types
 /coverage.json
+# Local deployment manifest is regenerated on every `npm run deploy:local`;
+# only the public-testnet manifests (deployments/sepolia.json, etc.) are
+# committed.
+/deployments/localhost.json
