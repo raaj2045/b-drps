@@ -4,8 +4,11 @@
  *     shape the frontend expects: App.js reads Auth.networks[id].address)
  *   - deployments/<network>.json -- a single canonical manifest per network
  *     with chainId, deployer, timestamp, and each contract's address + tx
- *     hash. Used by the README's Etherscan verify step and by reviewers
- *     reproducing the deploy on Sepolia.
+ *     hash.
+ *
+ * Used for local deploys (`npm run deploy:local`). Live Sepolia deployment was
+ * dropped from this revision (see README "Realistic measurements via a Sepolia
+ * fork"); realistic measurements come from forking, not deploying.
  *
  * Usage: npx hardhat run scripts/deploy.js --network <network>
  */

@@ -1,12 +1,13 @@
-// Coverage note (P2 follow-up): solidity-coverage reports auth.sol at 13/14
-// branches (92.86%). The uncovered branch is the second require in the
-// request path (`require(memberExist[_userAddress] == false, "Member Exist
-// Already!!")`). It is dead-ish: the prior `memberRequested == false` require
-// catches duplicate requests, and the only state where memberExist is true
-// while memberRequested is false is a JOURNAL that's been direct-added --
-// which then takes the else branch via `role != "JOURNAL"` short-circuit
-// rather than the request branch. Reachable only if a JOURNAL re-registers
-// as another role with request=true; left untested as a non-paper concern.
+// Coverage note (P2 follow-up, now resolved): auth.sol previously sat at
+// 92.31% branch coverage with two uncovered require-revert arms in
+// addOrRequestMember:
+//   - line 94, `require(memberExist == false)` in the request path, reachable
+//     when a direct-added member (e.g. a JOURNAL) later requests another role;
+//   - line 102, `require(memberRequested == true, "You need to Request First")`
+//     in the direct-add path, reachable when request=false is used for a
+//     non-JOURNAL address that never requested.
+// Both are now exercised by the "Registration: failure paths" tests below, so
+// auth.sol is at 100% branch coverage.
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
@@ -146,6 +147,31 @@ describe("Auth", function () {
       await expect(
         auth.connect(ae).approoveRequest(stranger.address, ae.address)
       ).to.be.revertedWith("You can't approove someone above than you.");
+    });
+
+    it("reverts when a direct-added member requests another role (request-path memberExist guard)", async function () {
+      const { auth, journal } = await loadFixture(deployAll);
+      // JOURNAL is direct-added: memberExist=true, memberRequested=false.
+      await auth
+        .connect(journal)
+        .addOrRequestMember("J", "JOURNAL", "j@x.com", journal.address, true);
+      // The same address now requests a non-JOURNAL role (request=true), so it
+      // enters the request branch. The memberRequested guard passes (it never
+      // "requested"), so the memberExist guard is the one that rejects it.
+      await expect(
+        auth.connect(journal).addOrRequestMember("J", "EIC", "j@x.com", journal.address, true)
+      ).to.be.revertedWith("Member Exist Already!!");
+    });
+
+    it("reverts on direct add (request=false) of a non-JOURNAL that never requested", async function () {
+      const { auth, stranger } = await loadFixture(deployAll);
+      // request=false + role != JOURNAL takes the else branch and must hit the
+      // "You need to Request First" guard, since nobody requested this address.
+      await expect(
+        auth
+          .connect(stranger)
+          .addOrRequestMember("X", "REVIEWER", "x@x.com", stranger.address, false)
+      ).to.be.revertedWith("You need to Request First");
     });
   });
 

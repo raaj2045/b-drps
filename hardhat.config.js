@@ -1,6 +1,20 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
+// Forked-Sepolia configuration. When FORK_SEPOLIA is set (see the
+// test:sepolia-fork / node:sepolia-fork npm scripts), the in-process `hardhat`
+// network forks REAL Sepolia state at a pinned block, giving deterministic,
+// reproducible measurements against live testnet state -- with a read-only RPC,
+// no private key, and no testnet funding required.
+//
+// Pinned block: 10,930,000  (2026-05-27 01:33:36 UTC). Pinning makes gas/state
+// measurements reproducible across runs and machines; see CHANGELOG.md.
+const SEPOLIA_FORK_BLOCK = 10_930_000;
+const sepoliaForking =
+  process.env.FORK_SEPOLIA && process.env.SEPOLIA_RPC_URL
+    ? { url: process.env.SEPOLIA_RPC_URL, blockNumber: SEPOLIA_FORK_BLOCK }
+    : undefined;
+
 module.exports = {
   solidity: {
     version: "0.8.19",
@@ -17,6 +31,9 @@ module.exports = {
   networks: {
     hardhat: {
       chainId: 31337,
+      // Only forks when FORK_SEPOLIA is set, so default `npm test` and the
+      // benchmark suite stay fast, offline, and key-free.
+      ...(sepoliaForking ? { forking: sepoliaForking } : {}),
     },
     localhost: {
       url: "http://127.0.0.1:8545",
@@ -37,31 +54,6 @@ module.exports = {
         interval: 12242,
       },
     },
-    sepolia: {
-      // SEPOLIA_RPC_URL: full Infura/Alchemy endpoint, e.g.
-      //   https://sepolia.infura.io/v3/<PROJECT_ID>
-      url: process.env.SEPOLIA_RPC_URL || "",
-      // DEPLOYER_PRIVATE_KEY: hex string with or without 0x prefix. Hardhat
-      // accepts both. Empty fallback so `npx hardhat compile` / `npm test`
-      // continue to work in environments without a deployer key.
-      accounts: process.env.DEPLOYER_PRIVATE_KEY
-        ? [process.env.DEPLOYER_PRIVATE_KEY]
-        : [],
-      chainId: 11155111,
-    },
-  },
-  etherscan: {
-    // ETHERSCAN_API_KEY: free from https://etherscan.io/myapikey.
-    // hardhat-verify reads this and uses it for the Sepolia explorer.
-    apiKey: {
-      sepolia: process.env.ETHERSCAN_API_KEY || "",
-    },
-  },
-  sourcify: {
-    // Sourcify verification is the open alternative to Etherscan; running
-    // both costs nothing and gives reviewers a non-proprietary path to
-    // confirm the deployed bytecode matches this source tree.
-    enabled: true,
   },
   mocha: {
     timeout: 60000,
