@@ -35,3 +35,14 @@ yarn-error.log*
 # only the public-testnet manifests (deployments/sepolia.json, etc.) are
 # committed.
 /deployments/localhost.json
+
+# Security/analysis tool artifacts (regenerable; reproducer call sequences are
+# documented in benchmarks/SECURITY_ANALYSIS.md). The benchmark reports, CSVs,
+# figures, and raw slither/solhint output under benchmarks/ stay tracked.
+/crytic-export
+/benchmarks/echidna-corpus
+/benchmarks/echidna-corpus-guarded
+/benchmarks/.cache
+
+# Local agent/editor tooling
+.mcp.json
