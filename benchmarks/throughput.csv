@@ -1,0 +1,9 @@
+operation,gas,opsPerBlock,tps
+addOrRequestMember,301333,99,8.09
+approveRequest,310518,96,7.84
+getPaperInfo,276390,108,8.82
+sendToEIC,331885,90,7.35
+EICapproval,626129,47,3.84
+AEapproval,626107,47,3.84
+Reviewerapproval,882729,33,2.7
+EICDecision,854151,35,2.86

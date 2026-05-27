@@ -1,0 +1,11 @@
+# Echidna property-fuzzing configuration.
+# testMode "property": run echidna_* functions and report any that return false.
+testMode: property
+# Number of fuzzing transactions per run.
+testLimit: 50000
+# Max length of a call sequence before state is reset.
+seqLen: 50
+# Deterministic runs for reproducible paper results.
+seed: 1
+# Quieter output; full corpus not needed for the report.
+corpusDir: benchmarks/echidna-corpus

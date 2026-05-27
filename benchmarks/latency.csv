@@ -1,0 +1,6 @@
+operation,samples,meanMs,minMs,maxMs
+request,5,12258,12221,12276
+approve,5,12232,12202,12262
+submit,5,24485,24455,24511
+EICapproval,5,12239,12227,12248
+EICDecision,5,24485,24461,24510

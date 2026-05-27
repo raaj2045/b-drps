@@ -22,7 +22,22 @@
     "eject": "react-scripts eject",
     "compile": "hardhat compile && node scripts/build-frontend-abis.js",
     "node": "hardhat node",
-    "deploy:local": "hardhat run scripts/deploy.js --network localhost"
+    "node:sepolia-fork": "FORK_SEPOLIA=1 hardhat node",
+    "test:sepolia-fork": "FORK_SEPOLIA=1 hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "benchmark": "hardhat run scripts/benchmark/all.js",
+    "benchmark:gas": "hardhat run scripts/benchmark/gas.js",
+    "benchmark:latency": "hardhat run scripts/benchmark/latency.js",
+    "benchmark:throughput": "hardhat run scripts/benchmark/throughput.js",
+    "benchmark:scalability": "hardhat run scripts/benchmark/scalability.js",
+    "benchmark:state-growth": "hardhat run scripts/benchmark/state-growth.js",
+    "benchmark:plot": "python3 scripts/plot.py",
+    "security:lint": "solhint 'contracts/**/*.sol'",
+    "security:slither": "slither contracts/auth.sol; slither contracts/main.sol; slither contracts/Decision.sol",
+    "security:mythril": "docker run --rm -v \"$PWD/contracts:/c\" mythril/myth analyze /c/auth.sol --solv 0.8.19 -t 3 --execution-timeout 150; docker run --rm -v \"$PWD/contracts:/c\" mythril/myth analyze /c/main.sol --solv 0.8.19 -t 3 --execution-timeout 150; docker run --rm -v \"$PWD/contracts:/c\" mythril/myth analyze /c/Decision.sol --solv 0.8.19 -t 3 --execution-timeout 150",
+    "security:echidna": "echidna contracts/echidna/EchidnaMain.sol --contract EchidnaMain --config echidna.config.yaml; echidna contracts/echidna/EchidnaAuth.sol --contract EchidnaAuth --config echidna.config.yaml; echidna contracts/echidna/EchidnaAuthGuarded.sol --contract EchidnaAuthGuarded --config echidna.guarded.yaml",
+    "security:coverage": "hardhat coverage",
+    "security": "npm run security:lint && npm run security:slither && npm run security:echidna && npm run security:coverage"
   },
   "eslintConfig": {
     "extends": [
@@ -46,6 +61,8 @@
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "dotenv": "^17.4.2",
     "hardhat": "^2.28.6",
+    "shadcn": "^4.7.0",
+    "solhint": "^6.2.1",
     "tailwindcss": "^3.3.2"
   }
 }

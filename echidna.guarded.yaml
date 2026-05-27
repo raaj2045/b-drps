@@ -1,0 +1,12 @@
+# Config for EchidnaAuthGuarded: whitelist only the guarded wrappers so the
+# raw inherited addOrRequestMember/denyRequest are not fuzzed directly. This
+# isolates the denyRequest data-loss path the ghost-count invariant targets.
+testMode: property
+testLimit: 50000
+seqLen: 50
+seed: 1
+corpusDir: benchmarks/echidna-corpus-guarded
+filterBlacklist: false
+filterFunctions:
+  - "EchidnaAuthGuarded.reqUser(uint8)"
+  - "EchidnaAuthGuarded.denyUser(uint8)"

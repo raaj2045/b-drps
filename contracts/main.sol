@@ -36,10 +36,9 @@ contract Main {
     PaperStruct[] recievedByEIC; 
     PaperStruct[] recievedByAE; 
 
-//  Maage indexes of the paper 
-    uint256 EICIndex = 0;
+//  Manage indexes of the paper
     mapping(address => uint256) indexFromEIC;
-    
+
 // Send the paper to the EIC
     function sendToEIC() public {
 
@@ -85,8 +84,7 @@ contract Main {
     PaperStruct[] approvedByAE; 
     PaperStruct[] recievedByReviewer;  
  
-//  Maage indexes of the paper 
-    uint256 AEIndex = 0;
+//  Manage indexes of the paper
     mapping(address => uint256) indexFromAE;
     
     // For getting papers in the AE 
@@ -124,7 +122,6 @@ contract Main {
     PaperStruct[] reviewedByReviewer; 
     PaperStruct[] RreceivedByAE;
 
-    uint256 ReviewerIndex = 0;
     mapping(address => uint256) indexFromReviewer;
     
     // For Getting papers to the reviewer
@@ -157,8 +154,7 @@ contract Main {
     // Reviewed By AE ----------------------------------------------------------------------------------------------------------
     
     // Manage reviewed papers came from the reviewer to the AE
-    PaperStruct[] reviewedByAE; 
-    uint256 RBAEindex = 0;
+    PaperStruct[] reviewedByAE;
     mapping(address => uint256) indexFromRBAE;
 
 // get Papers which are reviewed by reviewer to the AE 
