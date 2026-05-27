@@ -1,0 +1,127 @@
+
+contracts/main.sol
+    4:1   warning  Missing @title tag in contract 'Main'                                                                                                                    use-natspec
+    4:1   warning  Missing @author tag in contract 'Main'                                                                                                                   use-natspec
+    4:1   warning  Missing @notice tag in contract 'Main'                                                                                                                   use-natspec
+   20:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+   23:5   warning  Missing @notice tag in function 'getPaperInfo'                                                                                                           use-natspec
+   23:5   warning  Missing @param tag in function 'getPaperInfo'                                                                                                            use-natspec
+   23:5   warning  Mismatch in @param names for function 'getPaperInfo'. Expected: [_name, _email, _abstractofpaper, _papertitle, _linkofpaper, _authorAddress], Found: []  use-natspec
+   35:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+   36:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+   37:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+   40:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+   43:5   warning  Missing @notice tag in function 'sendToEIC'                                                                                                              use-natspec
+   51:5   warning  Missing @notice tag in function 'getRecievedByEIC'                                                                                                       use-natspec
+   56:5   warning  Missing @notice tag in function 'EICapproval'                                                                                                            use-natspec
+   56:5   warning  Missing @param tag in function 'EICapproval'                                                                                                             use-natspec
+   56:5   warning  Mismatch in @param names for function 'EICapproval'. Expected: [_EICapproval], Found: []                                                                 use-natspec
+   56:5   warning  Function name must be in mixedCase                                                                                                                       func-name-mixedcase
+   56:26  warning  Variable name must be in mixedCase _EICapproval                                                                                                          var-name-mixedcase
+   76:6   warning  Missing @notice tag in function 'getApprovedByEIC'                                                                                                       use-natspec
+   84:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+   85:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+   88:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+   91:5   warning  Missing @notice tag in function 'getRecievedByAE'                                                                                                        use-natspec
+   96:5   warning  Missing @notice tag in function 'AEapproval'                                                                                                             use-natspec
+   96:5   warning  Missing @param tag in function 'AEapproval'                                                                                                              use-natspec
+   96:5   warning  Mismatch in @param names for function 'AEapproval'. Expected: [_AEapproval], Found: []                                                                   use-natspec
+   96:5   warning  Function name must be in mixedCase                                                                                                                       func-name-mixedcase
+   96:25  warning  Variable name must be in mixedCase _AEapproval                                                                                                           var-name-mixedcase
+  116:6   warning  Missing @notice tag in function 'getApprovedByAE'                                                                                                        use-natspec
+  122:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+  123:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+  123:5   warning  Variable name must be in mixedCase RreceivedByAE                                                                                                         var-name-mixedcase
+  125:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+  128:5   warning  Missing @notice tag in function 'getRecievedByReviewer'                                                                                                  use-natspec
+  132:5   warning  Missing @notice tag in function 'Reviewerapproval'                                                                                                       use-natspec
+  132:5   warning  Missing @param tag in function 'Reviewerapproval'                                                                                                        use-natspec
+  132:5   warning  Mismatch in @param names for function 'Reviewerapproval'. Expected: [_Reviewerapproval, _Review, _reviewerAddress], Found: []                            use-natspec
+  132:5   warning  Function name must be in mixedCase                                                                                                                       func-name-mixedcase
+  132:31  warning  Variable name must be in mixedCase _Reviewerapproval                                                                                                     var-name-mixedcase
+  132:55  warning  Variable name must be in mixedCase _Review                                                                                                               var-name-mixedcase
+  149:6   warning  Missing @notice tag in function 'getReviewedbyReviewer'                                                                                                  use-natspec
+  157:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+  158:5   warning  Explicitly mark visibility of state                                                                                                                      state-visibility
+  161:5   warning  Missing @notice tag in function 'RereceivedByAE'                                                                                                         use-natspec
+  161:5   warning  Function name must be in mixedCase                                                                                                                       func-name-mixedcase
+  166:5   warning  Missing @notice tag in function 'ReviewedByAE'                                                                                                           use-natspec
+  166:5   warning  Missing @param tag in function 'ReviewedByAE'                                                                                                            use-natspec
+  166:5   warning  Mismatch in @param names for function 'ReviewedByAE'. Expected: [_AEReview, _Review], Found: []                                                          use-natspec
+  166:5   warning  Function name must be in mixedCase                                                                                                                       func-name-mixedcase
+  166:27  warning  Variable name must be in mixedCase _AEReview                                                                                                             var-name-mixedcase
+  166:43  warning  Variable name must be in mixedCase _Review                                                                                                               var-name-mixedcase
+  179:5   warning  Missing @notice tag in function 'getReviewedByAE'                                                                                                        use-natspec
+
+contracts/auth.sol
+    4:1   warning  Missing @title tag in contract 'Auth'                                                                                           use-natspec
+    4:1   warning  Missing @author tag in contract 'Auth'                                                                                          use-natspec
+    4:1   warning  Missing @notice tag in contract 'Auth'                                                                                          use-natspec
+    7:5   warning  Missing @notice tag in function '<anonymous>'                                                                                   use-natspec
+   29:5   warning  Explicitly mark visibility of state                                                                                             state-visibility
+   32:5   warning  Explicitly mark visibility of state                                                                                             state-visibility
+   33:5   warning  Explicitly mark visibility of state                                                                                             state-visibility
+   34:5   warning  Explicitly mark visibility of state                                                                                             state-visibility
+   37:5   warning  Explicitly mark visibility of state                                                                                             state-visibility
+   38:5   warning  Explicitly mark visibility of state                                                                                             state-visibility
+   39:5   warning  Explicitly mark visibility of state                                                                                             state-visibility
+   42:5   warning  Missing @notice tag in function 'getApprovedOrRequestedMember'                                                                  use-natspec
+   42:5   warning  Missing @param tag in function 'getApprovedOrRequestedMember'                                                                   use-natspec
+   42:5   warning  Mismatch in @param names for function 'getApprovedOrRequestedMember'. Expected: [request], Found: []                            use-natspec
+   55:5   warning  Function body contains 54 lines but allowed no more than 50 lines                                                               function-max-lines
+   55:5   warning  Missing @notice tag in function 'addOrRequestMember'                                                                            use-natspec
+   55:5   warning  Missing @param tag in function 'addOrRequestMember'                                                                             use-natspec
+   55:5   warning  Mismatch in @param names for function 'addOrRequestMember'. Expected: [_name, _role, _email, _userAddress, request], Found: []  use-natspec
+   90:13  warning  GC: Use Custom Errors instead of require statements                                                                             gas-custom-errors
+   91:13  warning  GC: Use Custom Errors instead of require statements                                                                             gas-custom-errors
+   99:17  warning  GC: Use Custom Errors instead of require statements                                                                             gas-custom-errors
+  104:13  warning  GC: Use Custom Errors instead of require statements                                                                             gas-custom-errors
+  113:5   warning  Missing @notice tag in function 'findMember'                                                                                    use-natspec
+  113:5   warning  Missing @param tag in function 'findMember'                                                                                     use-natspec
+  113:5   warning  Mismatch in @param names for function 'findMember'. Expected: [_userAddress, requestedMember], Found: []                        use-natspec
+  126:5   warning  Missing @notice tag in function 'approoveRequest'                                                                               use-natspec
+  126:5   warning  Missing @param tag in function 'approoveRequest'                                                                                use-natspec
+  126:5   warning  Mismatch in @param names for function 'approoveRequest'. Expected: [_userAddress, approvingUserAddress], Found: []              use-natspec
+  143:9   warning  Error message for require is too long: 42 counted / 32 allowed                                                                  reason-string
+  143:9   warning  GC: String exceeds 32 bytes                                                                                                     gas-small-strings
+  143:9   warning  GC: Use Custom Errors instead of require statements                                                                             gas-custom-errors
+  144:13  warning  GC: Non strict inequality found. Try converting to a strict one                                                                 gas-strict-inequalities
+  159:5   warning  Missing @notice tag in function 'denyRequest'                                                                                   use-natspec
+  159:5   warning  Missing @param tag in function 'denyRequest'                                                                                    use-natspec
+  159:5   warning  Mismatch in @param names for function 'denyRequest'. Expected: [_userAddress], Found: []                                        use-natspec
+  168:5   warning  Missing @notice tag in function 'memberExistOrNot'                                                                              use-natspec
+  168:5   warning  Missing @param tag in function 'memberExistOrNot'                                                                               use-natspec
+  168:5   warning  Mismatch in @param names for function 'memberExistOrNot'. Expected: [_userAddress], Found: []                                   use-natspec
+
+contracts/Decision.sol
+   4:1   warning  Missing @title tag in contract 'Decision'                                                                                                                                                use-natspec
+   4:1   warning  Missing @author tag in contract 'Decision'                                                                                                                                               use-natspec
+   4:1   warning  Missing @notice tag in contract 'Decision'                                                                                                                                               use-natspec
+  20:5   warning  Explicitly mark visibility of state                                                                                                                                                      state-visibility
+  23:5   warning  Explicitly mark visibility of state                                                                                                                                                      state-visibility
+  23:5   warning  Variable name must be in mixedCase Publishpaper                                                                                                                                          var-name-mixedcase
+  24:5   warning  Explicitly mark visibility of state                                                                                                                                                      state-visibility
+  24:5   warning  Variable name must be in mixedCase ReturnAuthor                                                                                                                                          var-name-mixedcase
+  25:5   warning  Explicitly mark visibility of state                                                                                                                                                      state-visibility
+  25:5   warning  Variable name must be in mixedCase RreceivedByEIC                                                                                                                                        var-name-mixedcase
+  28:5   warning  Missing @notice tag in function 'getPaperInfo'                                                                                                                                           use-natspec
+  28:5   warning  Missing @param tag in function 'getPaperInfo'                                                                                                                                            use-natspec
+  28:5   warning  Mismatch in @param names for function 'getPaperInfo'. Expected: [_name, _email, _abstractofpaper, _papertitle, _linkofpaper, _reviewofreviewer, _reviewofAE, _authorAddress], Found: []  use-natspec
+  42:5   warning  Missing @notice tag in function 'RerecievedByEIC'                                                                                                                                        use-natspec
+  42:5   warning  Function name must be in mixedCase                                                                                                                                                       func-name-mixedcase
+  47:5   warning  Missing @notice tag in function 'EICDecision'                                                                                                                                            use-natspec
+  47:5   warning  Missing @param tag in function 'EICDecision'                                                                                                                                             use-natspec
+  47:5   warning  Mismatch in @param names for function 'EICDecision'. Expected: [_Decision, _MessageToAuthor], Found: []                                                                                  use-natspec
+  47:5   warning  Function name must be in mixedCase                                                                                                                                                       func-name-mixedcase
+  47:26  warning  Variable name must be in mixedCase _Decision                                                                                                                                             var-name-mixedcase
+  47:42  warning  Variable name must be in mixedCase _MessageToAuthor                                                                                                                                      var-name-mixedcase
+  63:4   warning  Missing @notice tag in function 'getPublishedpaper'                                                                                                                                      use-natspec
+  68:4   warning  Missing @notice tag in function 'Returntoauthor'                                                                                                                                         use-natspec
+  68:4   warning  Function name must be in mixedCase                                                                                                                                                       func-name-mixedcase
+
+✖ 114 problems (0 errors, 114 warnings)
+
+ ------------------------------------------------------------------------------------------------------ 
+ ===> Smart contract Audits by Protofire. Book a call: ]8;;https://calendly.com/vitaliy-chernov/30minhttps://calendly.com/vitaliy-chernov/30min]8;; <===  
+ ------------------------------------------------------------------------------------------------------ 
+

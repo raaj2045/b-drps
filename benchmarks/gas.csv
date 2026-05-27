@@ -1,0 +1,16 @@
+category,operation,gas
+deployment,Auth,2520171
+deployment,Main,5171573
+deployment,Decision,1996712
+auth,addJournalDirect,296509
+auth,requestMember,301333
+auth,approveRequest,310518
+auth,denyRequest,45708
+pipeline,getPaperInfo,276390
+pipeline,sendToEIC,331885
+pipeline,EICapproval,626129
+pipeline,AEapproval,626107
+pipeline,Reviewerapproval,882729
+pipeline,ReviewedByAE,473481
+pipeline,decisionGetPaperInfo,736442
+pipeline,EICDecision,854151

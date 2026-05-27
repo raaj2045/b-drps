@@ -22,6 +22,21 @@ module.exports = {
       url: "http://127.0.0.1:8545",
       chainId: 31337,
     },
+    // In-process network used by scripts/benchmark.js to make latency
+    // measurements representative of Sepolia: 12-second block interval and
+    // Sepolia's ~30M block gas limit. Gas numbers are identical across all
+    // networks (EVM-deterministic) so other benchmarks use the default
+    // instant-mine `hardhat` network for speed.
+    sepoliaSim: {
+      url: "http://127.0.0.1:8545",
+      chainId: 11155111,
+      blockGasLimit: 30_000_000,
+      mining: {
+        auto: false,
+        // Exact interval average on 23rd May 2026
+        interval: 12242,
+      },
+    },
     sepolia: {
       // SEPOLIA_RPC_URL: full Infura/Alchemy endpoint, e.g.
       //   https://sepolia.infura.io/v3/<PROJECT_ID>
