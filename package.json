@@ -22,6 +22,8 @@
     "eject": "react-scripts eject",
     "compile": "hardhat compile && node scripts/build-frontend-abis.js",
     "node": "hardhat node",
+    "node:sepolia-fork": "FORK_SEPOLIA=1 hardhat node",
+    "test:sepolia-fork": "FORK_SEPOLIA=1 hardhat test",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "benchmark": "hardhat run scripts/benchmark/all.js",
     "benchmark:gas": "hardhat run scripts/benchmark/gas.js",

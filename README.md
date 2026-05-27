@@ -102,47 +102,50 @@ For testing convenience, register the first MetaMask account as a journal,
 then use the remaining imported accounts to test the request → approve flow
 for each role.
 
-## Deploy to Sepolia (public testnet)
+## Realistic measurements via a Sepolia fork
 
-Required environment variables (add to `.env`):
+This revision evaluates the contracts against **real Sepolia state by forking
+the network locally at a pinned block**, rather than performing a live
+deployment.
 
-| Var | Where to get it |
-|---|---|
-| `SEPOLIA_RPC_URL` | Infura: https://app.infura.io → new key → Sepolia endpoint URL.  Alchemy: https://dashboard.alchemy.com → new app → Sepolia → HTTPS URL. |
-| `DEPLOYER_PRIVATE_KEY` | Generate a **fresh** wallet for this — don't reuse a mainnet key. In MetaMask: account menu → Add account → copy the new account's private key (with or without `0x` prefix). |
-| `ETHERSCAN_API_KEY` | Free from https://etherscan.io/myapikey. |
+**Why a fork instead of a live deploy.** During setup for the live-deployment
+step, an [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) sweeper contract
+compromised the development wallet, and subsequent fresh-wallet + faucet
+attempts hit a cascade of friction. Forking preserves the evidence we actually
+need — real Sepolia state and deterministic, on-real-network gas costs — while
+eliminating the key-custody and funding risk entirely: the fork uses a
+**read-only RPC, no private key, and no testnet ETH**. A live Sepolia
+deployment is proposed as immediate future work.
 
-Fund the deployer wallet with Sepolia ETH (a successful deploy of all three contracts uses well under 0.05 SepETH at typical gas):
+**Pinned block.** The fork is pinned to Sepolia block **10,930,000**
+(2026-05-27 01:33:36 UTC) in `hardhat.config.js`. Pinning makes gas and state
+measurements reproducible across runs and machines. See `CHANGELOG.md`.
 
-- https://www.alchemy.com/faucets/ethereum-sepolia
-- https://cloud.google.com/application/web3/faucet/ethereum/sepolia
-- https://www.infura.io/faucet/sepolia
+### Setup
 
-Then:
-
-```bash
-npm run compile                 # ensure ABIs match
-npx hardhat run scripts/deploy.js --network sepolia
-```
-
-This produces:
-
-- `deployments/sepolia.json` — chainId, deployer, timestamp, and the three contract addresses + tx hashes. **Committed** — reviewers reproduce by pointing at the same addresses.
-- `src/contract_abi/{Auth,Main,Decision}.json` — `networks[11155111]` populated, so the frontend can talk to the Sepolia deployment after pointing `REACT_APP_RPC_URL` at a public Sepolia endpoint.
-
-### Verify on Etherscan
+Add a read-only Sepolia RPC URL to `.env` (any free tier — Alchemy, Infura,
+QuickNode). No key, no funding:
 
 ```bash
-npx hardhat verify --network sepolia <Auth_address>
-npx hardhat verify --network sepolia <Main_address>
-npx hardhat verify --network sepolia <Decision_address>
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<API_KEY>
 ```
 
-(Source files in this repo, deployed bytecode on Sepolia, and the verification result on Etherscan should all agree.)
+> **The RPC must serve archive state at the pinned block.** Forking at block
+> 10,930,000 requires the provider to return historical state there. Alchemy,
+> Infura, and QuickNode free tiers provide this on Sepolia. Generic pruned
+> public endpoints (e.g. `*.publicnode.com`) typically do **not** and will fail
+> with `historical state ... is not available`.
 
-### Post-deploy sanity check
+### Run against the fork
 
-After verification, anyone can read the deployed contracts directly from Etherscan's "Read Contract" tab — e.g., call `Auth.memberExistOrNot(0x…)` to confirm the contract is live and responding.
+```bash
+npm run test:sepolia-fork      # test suite against forked Sepolia state
+npm run node:sepolia-fork      # long-lived forked node on 127.0.0.1:8545
+```
+
+Both set `FORK_SEPOLIA=1`, which activates `networks.hardhat.forking` at the
+pinned block. Without it, the default `npm test` and the benchmark suite run on
+the fast local network — offline and key-free.
 
 ## Running tests
 
@@ -161,24 +164,34 @@ submission to `Decision.getPublishedpaper`. A handful of tests are marked
 no-op false-branches in `Reviewerapproval` / `ReviewedByAE`, missing
 role-check modifiers) that will be addressed in `feat/security-hardening`.
 
-Current coverage on `revision-2026`:
+Current coverage (Auth/Main/Decision; the `contracts/echidna/` fuzzing
+harnesses are excluded via `.solcover.js`):
 
 | Contract       | Statements | Branches | Functions | Lines |
 |----------------|-----------:|---------:|----------:|------:|
-| `auth.sol`     | 100%       | 92.86%   | 100%      | 100%  |
+| `auth.sol`     | 100%       | 100%     | 100%      | 100%  |
 | `main.sol`     | 100%       | 100%     | 100%      | 100%  |
 | `Decision.sol` | 100%       | 100%     | 100%      | 100%  |
-| **All**        | **100%**   | **94.74%** | **100%** | **100%** |
+| **All**        | **100%**   | **100%** | **100%**  | **100%** |
+
+`auth.sol` previously sat at 92.31% branch coverage: two `require` revert arms
+in `addOrRequestMember` were untested — the `memberExist` guard on the request
+path (reachable when a direct-added member, e.g. a JOURNAL, later requests
+another role) and the `"You need to Request First"` guard on the direct-add
+path (reachable via `request == false` for a non-JOURNAL that never requested).
+Both are now exercised by tests in `test/Auth.test.js`, bringing every contract
+to 100% branch coverage.
 
 ## Project layout
 
 ```
 contracts/         Auth.sol, Main.sol, Decision.sol (no ABI changes in this revision)
-scripts/           deploy.js, build-frontend-abis.js
+contracts/echidna/ Echidna property-fuzzing harnesses (excluded from coverage)
+scripts/           deploy.js, build-frontend-abis.js, benchmark/, plot.py
 src/               React frontend (App.js + Components/)
 src/contract_abi/  Frontend-imported ABI JSONs (rewritten by `npm run compile`)
-hardhat.config.js  Solidity 0.8.19; localhost, hardhat, sepolia networks
-deployments/       Per-network deployment manifests (sepolia.json committed)
+benchmarks/        Performance report, CSVs, figures, SECURITY_ANALYSIS.md
+hardhat.config.js  Solidity 0.8.19; hardhat (forkable to Sepolia), localhost, sepoliaSim
 .env.example       Template for required environment variables
 ```
 
