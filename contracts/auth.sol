@@ -2,7 +2,12 @@
 pragma solidity ^0.8.7;
 
 contract Auth {
-    function recieve() external payable {}
+    // NOTE: no payable receive/fallback. The publishing workflow handles no
+    // value transfer, so the contract deliberately rejects plain ETH. A prior
+    // version had `function recieve() external payable {}` (a misspelled
+    // regular function); promoting it to a real `receive()` made Slither flag
+    // a locked-ether vulnerability (ETH could be received but never withdrawn),
+    // so it was removed entirely.
 
     // ----------------------------------------------- MEMBER - REQUEST, APPROVE, ADD --------------------------------------------------
 
@@ -15,13 +20,16 @@ contract Auth {
         uint256 power;
     }
 
-    // Indexes to manage the requested or approved entities
-    uint256 requestIndex = 0;
-    uint256 memberIndex = 0;
+    // Cached role-string hashes so addOrRequestMember does one keccak256 on
+    // the role parameter and compares against pre-hashed constants instead
+    // of recomputing four times per call.
+    bytes32 private constant JOURNAL_HASH  = keccak256("JOURNAL");
+    bytes32 private constant EIC_HASH      = keccak256("EIC");
+    bytes32 private constant AE_HASH       = keccak256("AE");
+    bytes32 private constant REVIEWER_HASH = keccak256("REVIEWER");
 
     // Mapping indexes with a particular useraddresses
     mapping(address => uint256) indexFromRequest;
-    mapping(address => uint256) indexFromApproove;
 
     // For Approved Members
     mapping(address => MemberStruct) getMemberWithAddress;
@@ -46,9 +54,6 @@ contract Auth {
         }
     }
 
-    // instance of the struct to use everywhere
-    MemberStruct instanceOfMemberStruct;
-
     // function to add or request member (true = request member | false = directly add member | Journal will be directly added as a member)
     function addOrRequestMember(
         string memory _name,
@@ -57,75 +62,52 @@ contract Auth {
         address _userAddress,
         bool request
     ) public {
+        // Hash role once instead of recomputing on every comparison below.
+        bytes32 roleHash = keccak256(abi.encodePacked(_role));
 
-        instanceOfMemberStruct.name = _name;
-        instanceOfMemberStruct.role = _role;
-        instanceOfMemberStruct.email = _email;
-        instanceOfMemberStruct.userAddress = _userAddress;
-
-        // deciding power based on type
-        if (
-            keccak256(abi.encodePacked(_role)) ==
-            keccak256(abi.encodePacked("JOURNAL"))
-        ) {
-            instanceOfMemberStruct.power = 1;
-        } else if (
-            keccak256(abi.encodePacked(_role)) ==
-            keccak256(abi.encodePacked("EIC"))
-        ) {
-            instanceOfMemberStruct.power = 2;
-        } else if (
-            keccak256(abi.encodePacked(_role)) ==
-            keccak256(abi.encodePacked("AE"))
-        ) {
-            instanceOfMemberStruct.power = 3;
-        } else if (
-            keccak256(abi.encodePacked(_role)) ==
-            keccak256(abi.encodePacked("REVIEWER"))
-        ) {
-            instanceOfMemberStruct.power = 4;
+        uint256 power;
+        if (roleHash == JOURNAL_HASH) {
+            power = 1;
+        } else if (roleHash == EIC_HASH) {
+            power = 2;
+        } else if (roleHash == AE_HASH) {
+            power = 3;
+        } else if (roleHash == REVIEWER_HASH) {
+            power = 4;
         } else {
-            instanceOfMemberStruct.power = 5;
+            power = 5;
         }
 
-        // if not Journal
+        // Build the struct in memory and write to storage once via push /
+        // mapping assignment, instead of populating a shared storage scratchpad
+        // field-by-field and then copying it.
+        MemberStruct memory m = MemberStruct({
+            name: _name,
+            role: _role,
+            email: _email,
+            userAddress: _userAddress,
+            power: power
+        });
 
-        if (
-            request == true &&
-            keccak256(abi.encodePacked(_role)) !=
-            keccak256(abi.encodePacked("JOURNAL"))
-        ) {
-            // some require checks here
+        if (request == true && roleHash != JOURNAL_HASH) {
             require(memberRequested[_userAddress] == false, "Member Requested Already!!");
             require(memberExist[_userAddress] == false, "Member Exist Already!!");
 
-            // add it to the requested member data structure
-            arrayOfRequestedMembers.push(instanceOfMemberStruct);
+            arrayOfRequestedMembers.push(m);
             indexFromRequest[_userAddress] = arrayOfRequestedMembers.length - 1;
-
-            getRequestedMemberWithAddress[
-                _userAddress
-            ] = instanceOfMemberStruct;
+            getRequestedMemberWithAddress[_userAddress] = m;
             memberRequested[_userAddress] = true;
-        }
-        // if Journal
-        else {
-            if (
-                keccak256(abi.encodePacked(_role)) !=
-                keccak256(abi.encodePacked("JOURNAL"))
-            ) {
-                // some require checks here
+        } else {
+            if (roleHash != JOURNAL_HASH) {
                 require(
                     memberRequested[_userAddress] == true,
                     "You need to Request First"
                 );
             }
-
             require(memberExist[_userAddress] == false, "Member Exist Already!!");
 
-            // add it to the approved member data structure
-            arrayOfMembers.push(instanceOfMemberStruct);
-            getMemberWithAddress[_userAddress] = instanceOfMemberStruct;
+            arrayOfMembers.push(m);
+            getMemberWithAddress[_userAddress] = m;
             memberExist[_userAddress] = true;
         }
     }
@@ -187,10 +169,6 @@ contract Auth {
 
     // Function to know if member exist or not - will be useful in login and other features
     function memberExistOrNot(address _userAddress) public view returns (bool) {
-        if ((memberExist[_userAddress] == true)) {
-            return true;
-        } else {
-            return false;
-        }
+        return memberExist[_userAddress];
     }
 }

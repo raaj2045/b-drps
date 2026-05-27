@@ -163,12 +163,15 @@ describe("Auth", function () {
     });
   });
 
-  describe("recieve() (misspelled payable hook)", function () {
-    it("accepts a payable transfer without reverting", async function () {
+  describe("no payable hook (plain ETH transfer rejected)", function () {
+    it("reverts on a plain ETH transfer (no receive/fallback)", async function () {
       const { auth, journal } = await loadFixture(deployAll);
-      // The function body is empty; it exists so the contract can accept
-      // ETH for gas-cost experiments. Calling it shouldn't revert.
-      await auth.connect(journal).recieve({ value: 100n });
+      // The misspelled `function recieve()` was removed entirely: Slither
+      // flagged a locked-ether vuln once it became a real `receive()`, and
+      // the workflow handles no value. The contract must now reject ETH.
+      await expect(
+        journal.sendTransaction({ to: await auth.getAddress(), value: 100n })
+      ).to.be.reverted;
     });
   });
 
