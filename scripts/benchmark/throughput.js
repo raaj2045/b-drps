@@ -9,7 +9,7 @@ const hre = require("hardhat");
 const {
   SEPOLIA_BLOCK_GAS_LIMIT, SEPOLIA_BLOCK_TIME_S,
   fmtGas, setMining, deployAll, registerRolesWithGas, runPipelineOnce,
-  writeSection, writeCsv, readCache,
+  writeSection, writeNetworkCsv, readCache,
 } = require("./lib");
 const gasModule = require("./gas");
 
@@ -90,11 +90,10 @@ function renderSection(data) {
 }
 
 function writeCsvFile(data) {
-  const csv = ["operation,gas,opsPerBlock,tps"];
-  for (const [k, v] of Object.entries(data.analytical)) {
-    csv.push(`${k},${v.gas},${v.opsPerBlock},${v.tps}`);
-  }
-  writeCsv("throughput.csv", csv);
+  const rows = Object.entries(data.analytical).map(
+    ([k, v]) => `${k},${v.gas},${v.opsPerBlock},${v.tps}`
+  );
+  writeNetworkCsv("throughput.csv", "operation,gas,opsPerBlock,tps", rows);
 }
 
 async function main() {

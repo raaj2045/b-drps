@@ -10,7 +10,7 @@ const hre = require("hardhat");
 const {
   OUT_DIR, SECTIONS_DIR,
   SEPOLIA_BLOCK_GAS_LIMIT, SEPOLIA_BLOCK_TIME_S,
-  writeCache,
+  writeCache, networkLabel,
 } = require("./lib");
 
 const gas = require("./gas");
@@ -20,29 +20,44 @@ const scalability = require("./scalability");
 const stateGrowth = require("./state-growth");
 
 function reportHeader() {
+  const label = networkLabel();
+  const authoritative =
+    "Sections 1–3 and the lifecycle are **dual-network** (`local` + " +
+    "`sepoliaFork` row-blocks); their per-operation gas tables are " +
+    "byte-for-byte identical across networks (Section 1, and " +
+    "`figures/gas_network_compare.png`), so the local measurements equal the " +
+    "real-Sepolia-state ones. Sections 4–5 are **local-only by design** — see " +
+    "the note in each. Tables are network-independent wherever gas-derived; " +
+    "wall-clock columns reflect local execution and are not cross-network " +
+    `meaningful. (This pass ran on \`${label}\`.)`;
   return [
     "# Benchmark Report",
     "",
-    `_Generated: ${new Date().toISOString()}_`,
+    `_Generated: ${new Date().toISOString()} · network: ${label}_`,
     "",
     "## Methodology",
     "",
-    "Measurements are taken on a local Hardhat in-process node because Sepolia " +
-    "ETH was not available for live testing. The EVM is deterministic, so " +
-    "gas-per-operation numbers are identical on Sepolia. Latency, throughput, " +
-    "and scalability depend on block cadence and gas limit, so the local node " +
-    `is configured to match Sepolia parameters (${SEPOLIA_BLOCK_TIME_S}s block ` +
-    `interval, ${SEPOLIA_BLOCK_GAS_LIMIT.toLocaleString()} gas/block) for those ` +
-    "sections.",
+    "Measurements run on the in-process Hardhat network in two passes: a " +
+    "**local** pass (fast, offline) and a **sepoliaFork** pass that forks real " +
+    "Sepolia state at the pinned block (see README / CHANGELOG). The EVM is " +
+    "deterministic, so gas-per-operation is identical across both — the fork " +
+    "validates the local numbers against real-network parameters rather than " +
+    "changing them. Latency, throughput, and scalability depend on block " +
+    `cadence and gas limit (${SEPOLIA_BLOCK_TIME_S}s block interval, ` +
+    `${SEPOLIA_BLOCK_GAS_LIMIT.toLocaleString()} gas/block).`,
     "",
-    "Each section can also be run independently via " +
-    "`npm run benchmark:gas|latency|throughput|scalability|state-growth`.",
+    authoritative,
+    "",
+    "Every CSV in this directory carries a `network` column with one row-block " +
+    "per network; the figures (`figures/`) compare them. Sections run " +
+    "independently via `npm run benchmark:<section>`; both networks via " +
+    "`npm run benchmark:all-networks`.",
     "",
   ].join("\n");
 }
 
 async function main() {
-  console.log(`Network: ${hre.network.name}`);
+  console.log(`Network: ${hre.network.name} (label: ${networkLabel()})`);
 
   console.log("\n[1/5] Gas per operation...");
   const gasData = await gas.run();

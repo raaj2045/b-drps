@@ -5,7 +5,7 @@
  */
 const {
   fmtGas, setMining, deployAll, registerRolesWithGas, runPipelineOnce,
-  writeSection, writeCache, writeCsv,
+  writeSection, writeCache, writeNetworkCsv,
 } = require("./lib");
 
 const LIFECYCLE_LABELS = {
@@ -56,33 +56,27 @@ function renderSection(data) {
 
 // gas.csv: every write op, flat, with its category. Source for cost plots.
 function writeGasCsv(data) {
-  const csv = ["category,operation,gas"];
-  for (const [k, v] of Object.entries(data.deployment)) {
-    csv.push(`deployment,${k},${v}`);
-  }
-  for (const [k, v] of Object.entries(data.auth)) {
-    csv.push(`auth,${k},${v}`);
-  }
-  for (const [k, v] of Object.entries(data.pipeline)) {
-    csv.push(`pipeline,${k},${v}`);
-  }
-  writeCsv("gas.csv", csv);
+  const rows = [];
+  for (const [k, v] of Object.entries(data.deployment)) rows.push(`deployment,${k},${v}`);
+  for (const [k, v] of Object.entries(data.auth)) rows.push(`auth,${k},${v}`);
+  for (const [k, v] of Object.entries(data.pipeline)) rows.push(`pipeline,${k},${v}`);
+  writeNetworkCsv("gas.csv", "category,operation,gas", rows);
 }
 
 // lifecycle.csv: the ordered single-paper journey with running total. Source
 // for the cumulative-gas waterfall figure.
 function writeLifecycleCsv(data) {
-  const csv = ["step,operation,label,gas,cumulativeGas"];
+  const rows = [];
   let cumulative = 0;
   let step = 1;
   for (const [k, label] of Object.entries(LIFECYCLE_LABELS)) {
     const gas = data.pipeline[k];
     if (gas === undefined) continue;
     cumulative += gas;
-    csv.push(`${step},${k},${label},${gas},${cumulative}`);
+    rows.push(`${step},${k},${label},${gas},${cumulative}`);
     step += 1;
   }
-  writeCsv("lifecycle.csv", csv);
+  writeNetworkCsv("lifecycle.csv", "step,operation,label,gas,cumulativeGas", rows);
 }
 
 async function main() {

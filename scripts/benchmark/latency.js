@@ -7,7 +7,7 @@
 const {
   LATENCY_SAMPLES, SEPOLIA_BLOCK_TIME_S,
   setMining, deployAll, registerRolesWithGas,
-  writeSection, writeCsv,
+  writeSection, writeNetworkCsv,
 } = require("./lib");
 
 async function run() {
@@ -86,11 +86,10 @@ function renderSection(data) {
 }
 
 function writeCsvFile(data) {
-  const csv = ["operation,samples,meanMs,minMs,maxMs"];
-  for (const [k, v] of Object.entries(data)) {
-    csv.push(`${k},${v.samples},${v.meanMs},${v.minMs},${v.maxMs}`);
-  }
-  writeCsv("latency.csv", csv);
+  const rows = Object.entries(data).map(
+    ([k, v]) => `${k},${v.samples},${v.meanMs},${v.minMs},${v.maxMs}`
+  );
+  writeNetworkCsv("latency.csv", "operation,samples,meanMs,minMs,maxMs", rows);
 }
 
 async function main() {

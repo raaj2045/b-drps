@@ -22,6 +22,14 @@ function fmtGas(n) {
   return n.toLocaleString("en-US");
 }
 
+function networkLabel() {
+  return process.env.FORK_SEPOLIA ? "sepoliaFork" : "local";
+}
+
+function isAppend() {
+  return Boolean(process.env.BENCH_APPEND);
+}
+
 async function getReceipt(tx) {
   return await tx.wait();
 }
@@ -181,6 +189,25 @@ function writeCsv(filename, lines) {
   console.log(`  -> ${filename}`);
 }
 
+// Network-aware CSV writer. `header` and `rows` are WITHOUT the network column;
+// this prepends "network" / the active label. On the local pass it truncates
+// and writes header + rows; on the appending fork pass it appends rows only
+// (assuming the header already matches). One file ends up with a `network`
+// column and one row-block per network.
+function writeNetworkCsv(filename, header, rows) {
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  const label = networkLabel();
+  const full = path.join(OUT_DIR, filename);
+  const bodyRows = rows.map((r) => `${label},${r}`);
+  if (isAppend() && fs.existsSync(full)) {
+    fs.appendFileSync(full, bodyRows.join("\n") + "\n");
+    console.log(`  -> ${filename} (appended ${label})`);
+  } else {
+    fs.writeFileSync(full, [`network,${header}`, ...bodyRows].join("\n") + "\n");
+    console.log(`  -> ${filename} (${label})`);
+  }
+}
+
 // JSON cache for cross-section dependencies (throughput needs gas numbers).
 // Standalone runs of dependent sections fall back to recomputing.
 function writeCache(name, data) {
@@ -198,7 +225,7 @@ module.exports = {
   OUT_DIR, SECTIONS_DIR, CACHE_DIR,
   SEPOLIA_BLOCK_GAS_LIMIT, SEPOLIA_BLOCK_TIME_S,
   SCALABILITY_NS, LATENCY_SAMPLES, STATE_GROWTH_KS,
-  fmtGas, getReceipt, setMining, syntheticAddress,
+  fmtGas, networkLabel, isAppend, getReceipt, setMining, syntheticAddress,
   deployAll, registerRolesWithGas, runPipelineOnce,
-  writeSection, writeCsv, writeCache, readCache,
+  writeSection, writeCsv, writeNetworkCsv, writeCache, readCache,
 };

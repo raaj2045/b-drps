@@ -26,6 +26,8 @@
     "test:sepolia-fork": "FORK_SEPOLIA=1 hardhat test",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "benchmark": "hardhat run scripts/benchmark/all.js",
+    "benchmark:fork": "FORK_SEPOLIA=1 BENCH_APPEND=1 hardhat run scripts/benchmark/all.js",
+    "benchmark:all-networks": "npm run benchmark && npm run benchmark:fork",
     "benchmark:gas": "hardhat run scripts/benchmark/gas.js",
     "benchmark:latency": "hardhat run scripts/benchmark/latency.js",
     "benchmark:throughput": "hardhat run scripts/benchmark/throughput.js",
