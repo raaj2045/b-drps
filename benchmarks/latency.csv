@@ -1,6 +1,11 @@
-operation,samples,meanMs,minMs,maxMs
-request,5,12258,12221,12276
-approve,5,12232,12202,12262
-submit,5,24485,24455,24511
-EICapproval,5,12239,12227,12248
-EICDecision,5,24485,24461,24510
+network,operation,samples,meanMs,minMs,maxMs
+local,request,5,13879,12196,14990
+local,approve,5,12778,12194,14968
+local,submit,5,26735,25754,27276
+local,EICapproval,5,12242,12200,12288
+local,EICDecision,5,27167,26932,27341
+sepoliaFork,request,5,13344,11473,14679
+sepoliaFork,approve,5,13412,12701,15664
+sepoliaFork,submit,5,20900,18421,28555
+sepoliaFork,EICapproval,5,18561,16062,20571
+sepoliaFork,EICDecision,5,25885,24728,26731

@@ -9,7 +9,7 @@ const {
   STATE_GROWTH_KS,
   fmtGas, getReceipt, setMining, syntheticAddress,
   deployAll, registerRolesWithGas,
-  writeSection, writeCsv,
+  writeSection, writeNetworkCsv,
 } = require("./lib");
 
 async function run() {
@@ -82,6 +82,12 @@ function renderSection(data) {
     "Flat columns indicate O(1) per-op cost regardless of state size; rising " +
     "columns indicate an O(n) regression to investigate.\n"
   );
+  lines.push(
+    "> **Local-only, valid cross-network.** Every column here is a gas " +
+    "measurement, and Section 1 proves per-operation gas is byte-for-byte " +
+    "identical between `local` and `sepoliaFork`. These O(1)/O(n) figures are " +
+    "therefore network-independent; the fork would reproduce them exactly.\n"
+  );
   lines.push("| K | addOrRequestMember | approoveRequest | denyRequest | sendToEIC | EICapproval |");
   lines.push("|---:|---:|---:|---:|---:|---:|");
   for (const r of data) {
@@ -96,11 +102,14 @@ function renderSection(data) {
 }
 
 function writeCsvFile(rows) {
-  const csv = ["K,addOrRequestMember,approoveRequest,denyRequest,sendToEIC,EICapproval"];
-  for (const r of rows) {
-    csv.push(`${r.K},${r.gasAddRequest},${r.gasApprove},${r.gasDeny},${r.gasSend},${r.gasEicApprove}`);
-  }
-  writeCsv("state_growth.csv", csv);
+  const body = rows.map(
+    (r) => `${r.K},${r.gasAddRequest},${r.gasApprove},${r.gasDeny},${r.gasSend},${r.gasEicApprove}`
+  );
+  writeNetworkCsv(
+    "state_growth.csv",
+    "K,addOrRequestMember,approoveRequest,denyRequest,sendToEIC,EICapproval",
+    body
+  );
 }
 
 async function main() {

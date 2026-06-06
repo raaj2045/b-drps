@@ -55,6 +55,20 @@ def _read_csv(path):
         return list(csv.DictReader(f))
 
 
+# Authoritative network for single-series figures: prefer the forked-Sepolia
+# rows (the paper's authoritative source); fall back to local if the fork pass
+# hasn't been run. Tolerates CSVs with no `network` column (older runs).
+def _networks(rows):
+    return [n for n in dict.fromkeys(r.get("network", "local") for r in rows)]
+
+
+def _authoritative(rows):
+    if not rows or "network" not in rows[0]:
+        return rows
+    pref = "sepoliaFork" if any(r["network"] == "sepoliaFork" for r in rows) else "local"
+    return [r for r in rows if r["network"] == pref]
+
+
 def _save(fig, name):
     for ext in ("png", "pdf"):
         out = FIG_DIR / f"{name}.{ext}"
@@ -68,7 +82,7 @@ def plot_latency():
     if not path.exists():
         print(f"  (skip latency: {path.name} not found)")
         return
-    rows = _read_csv(path)
+    rows = _authoritative(_read_csv(path))
     ops = [r["operation"] for r in rows]
     means = [int(r["meanMs"]) for r in rows]
     mins = [int(r["minMs"]) for r in rows]
@@ -95,7 +109,7 @@ def plot_throughput():
     if not path.exists():
         print(f"  (skip throughput: {path.name} not found)")
         return
-    rows = sorted(_read_csv(path), key=lambda r: float(r["tps"]), reverse=True)
+    rows = sorted(_authoritative(_read_csv(path)), key=lambda r: float(r["tps"]), reverse=True)
     ops = [r["operation"] for r in rows]
     tps = [float(r["tps"]) for r in rows]
 
@@ -115,7 +129,7 @@ def plot_scalability():
     if not path.exists():
         print(f"  (skip scalability: {path.name} not found)")
         return
-    rows = sorted(_read_csv(path), key=lambda r: int(r["N"]))
+    rows = sorted(_authoritative(_read_csv(path)), key=lambda r: int(r["N"]))
     N = [int(r["N"]) for r in rows]
     total_gas = [int(r["totalGas"]) for r in rows]
     mean_gas = [int(r["meanGasPerPaper"]) for r in rows]
@@ -152,7 +166,7 @@ def plot_lifecycle():
     if not path.exists():
         print(f"  (skip lifecycle: {path.name} not found)")
         return
-    rows = sorted(_read_csv(path), key=lambda r: int(r["step"]))
+    rows = sorted(_authoritative(_read_csv(path)), key=lambda r: int(r["step"]))
     labels = [r["label"] for r in rows]
     gas = [int(r["gas"]) for r in rows]
 
@@ -190,7 +204,7 @@ def plot_cost():
     if not path.exists():
         print(f"  (skip cost: {path.name} not found)")
         return
-    rows = _read_csv(path)
+    rows = _authoritative(_read_csv(path))
     total_gas = sum(int(r["gas"]) for r in rows)
 
     # cost_usd = gas * gasPrice(gwei) * 1e9 wei/gwei / 1e18 wei/ETH * ETH_USD
@@ -219,9 +233,9 @@ def plot_state_growth():
     if not path.exists():
         print(f"  (skip state-growth: {path.name} not found)")
         return
-    rows = sorted(_read_csv(path), key=lambda r: int(r["K"]))
+    rows = sorted(_authoritative(_read_csv(path)), key=lambda r: int(r["K"]))
     K = [int(r["K"]) for r in rows]
-    op_columns = [c for c in rows[0].keys() if c != "K"]
+    op_columns = [c for c in rows[0].keys() if c not in ("K", "network")]
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
     markers = ["o", "s", "^", "D", "v"]
@@ -238,8 +252,69 @@ def plot_state_growth():
     _save(fig, "state_growth")
 
 
+def plot_gas_network_compare():
+    """Grouped bars: per-op gas, local vs sepoliaFork. Gas is EVM-deterministic,
+    so the bars should coincide -- the figure validates that the local
+    measurements equal the forked-Sepolia ones. Skipped if only one network."""
+    path = DATA_DIR / "gas.csv"
+    if not path.exists():
+        print(f"  (skip gas-compare: {path.name} not found)")
+        return
+    rows = _read_csv(path)
+    nets = _networks(rows)
+    if len(nets) < 2:
+        print("  (skip gas-compare: need >1 network; run npm run benchmark:fork)")
+        return
+    # Pipeline ops only (most relevant + comparable across networks).
+    ops = [r["operation"] for r in rows if r["network"] == nets[0]
+           and r["category"] == "pipeline"]
+    gas_by_net = {
+        n: {r["operation"]: int(r["gas"]) for r in rows
+            if r["network"] == n and r["category"] == "pipeline"}
+        for n in nets
+    }
+
+    import numpy as np
+    x = np.arange(len(ops))
+    width = 0.8 / len(nets)
+    palette = ["#4C72B0", "#DD8452", "#55A868"]
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+    for i, n in enumerate(nets):
+        vals = [gas_by_net[n].get(op, 0) for op in ops]
+        ax.bar(x + i * width, vals, width, label=n,
+               color=palette[i % len(palette)], edgecolor="black", linewidth=0.4)
+    ax.set_xticks(x + width * (len(nets) - 1) / 2)
+    ax.set_xticklabels(ops, rotation=25, ha="right", fontsize=9)
+    ax.set_ylabel("Gas used")
+    ax.yaxis.set_major_formatter(mtick.FuncFormatter(lambda v, _: f"{v/1e3:.0f}k"))
+
+    ax.set_title(
+        "Per-operation gas is byte-for-byte identical across networks\n"
+        "(local vs forked Sepolia bars coincide — gas is EVM-deterministic)"
+    )
+
+    # Quantify the parity on-figure so the claim is unmistakable even at a glance.
+    if len(nets) >= 2:
+        ref = gas_by_net[nets[0]]
+        identical = all(
+            gas_by_net[n].get(op) == ref.get(op) for n in nets[1:] for op in ops
+        )
+        if identical:
+            ax.text(
+                0.99, 0.97,
+                f"Δgas = 0 across all {len(ops)} pipeline ops\n"
+                f"({' = '.join(nets)})",
+                transform=ax.transAxes, ha="right", va="top", fontsize=9,
+                bbox=dict(boxstyle="round,pad=0.4", fc="#EEF3FA", ec="#4C72B0",
+                          lw=0.8),
+            )
+    ax.legend(frameon=False, loc="upper left")
+    _save(fig, "gas_network_compare")
+
+
 def main():
     print(f"reading from {DATA_DIR.relative_to(ROOT)}/")
+    plot_gas_network_compare()
     plot_lifecycle()
     plot_cost()
     plot_latency()

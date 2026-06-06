@@ -7,7 +7,7 @@
 const {
   SCALABILITY_NS,
   fmtGas, setMining, deployAll, registerRolesWithGas, runPipelineOnce,
-  writeSection, writeCsv,
+  writeSection, writeNetworkCsv,
 } = require("./lib");
 
 async function run() {
@@ -43,6 +43,16 @@ async function run() {
 function renderSection(data) {
   const lines = ["## 4. Scalability\n"];
   lines.push("Full Auth->Main->Decision pipeline run for N papers.\n");
+  lines.push(
+    "> **Local-only, valid cross-network.** This sweep is run on the local " +
+    "network only. Its reported metrics (`totalGas`, `meanGasPerPaper`) are " +
+    "gas-derived, and Section 1 proves per-operation gas is byte-for-byte " +
+    "identical between `local` and `sepoliaFork`. Gas is EVM-deterministic, so " +
+    "a sum of identical per-op costs is itself identical — the fork would " +
+    "reproduce these numbers exactly. Only wall-clock differs, which on a fork " +
+    "measures the harness (block production is harness-controlled), not the " +
+    "network, so it is not a meaningful cross-network metric.\n"
+  );
   lines.push("| N | Total gas | Mean gas / paper | Wall-clock (ms) | Mean ms / paper |");
   lines.push("|---:|---:|---:|---:|---:|");
   for (const r of data) {
@@ -57,11 +67,10 @@ function renderSection(data) {
 }
 
 function writeCsvFile(rows) {
-  const csv = ["N,totalGas,meanGasPerPaper,wallClockMs,meanMsPerPaper"];
-  for (const r of rows) {
-    csv.push(`${r.N},${r.totalGas},${r.meanGasPerPaper},${r.wallClockMs},${r.meanMsPerPaper}`);
-  }
-  writeCsv("scalability.csv", csv);
+  const body = rows.map(
+    (r) => `${r.N},${r.totalGas},${r.meanGasPerPaper},${r.wallClockMs},${r.meanMsPerPaper}`
+  );
+  writeNetworkCsv("scalability.csv", "N,totalGas,meanGasPerPaper,wallClockMs,meanMsPerPaper", body);
 }
 
 async function main() {

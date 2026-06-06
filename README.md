@@ -147,6 +147,34 @@ Both set `FORK_SEPOLIA=1`, which activates `networks.hardhat.forking` at the
 pinned block. Without it, the default `npm test` and the benchmark suite run on
 the fast local network — offline and key-free.
 
+### Benchmark network coverage
+
+The benchmark CSVs in `benchmarks/` carry a leading `network` column. Four are
+**dual-network** (a `local` row-block and a `sepoliaFork` row-block); two are
+**local-only** by design:
+
+| CSV | Networks | Why |
+|---|---|---|
+| `gas.csv` | local + sepoliaFork | per-op gas, the parity proof |
+| `latency.csv` | local + sepoliaFork | block-cadence latency |
+| `throughput.csv` | local + sepoliaFork | analytical TPS ceiling |
+| `lifecycle.csv` | local + sepoliaFork | end-to-end gas waterfall |
+| `scalability.csv` | local only | see note below |
+| `state_growth.csv` | local only | see note below |
+
+`scalability.csv` and `state_growth.csv` are local-only, and this is sound
+cross-network. Their reported metrics (`totalGas`, `meanGasPerPaper`, the
+per-op slot-growth columns) are **gas-derived**, and `gas.csv` proves
+per-operation gas is **byte-for-byte identical** between `local` and
+`sepoliaFork` across all 15 operations. Gas is EVM-deterministic, so a sum of
+identical per-op costs is itself identical — the fork would reproduce these
+numbers exactly. The only column that *would* differ is wall-clock time, which
+is local-only by nature: on a fork, block production is harness-controlled, so
+wall-clock measures the test harness, not the network. We therefore do not run
+these two sweeps on the fork (each fires thousands of transactions, and on a
+forked node every transaction triggers throttled archive-RPC state fetches,
+which makes the sweep impractically slow without buying any new information).
+
 ## Running tests
 
 Mocha/chai suite against the three Solidity contracts:
