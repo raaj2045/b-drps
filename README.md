@@ -147,6 +147,23 @@ Both set `FORK_SEPOLIA=1`, which activates `networks.hardhat.forking` at the
 pinned block. Without it, the default `npm test` and the benchmark suite run on
 the fast local network — offline and key-free.
 
+### Running benchmarks
+
+```bash
+npm run benchmark            # local pass — truncates each CSV and writes local rows
+npm run benchmark:fork       # appends the forked-Sepolia rows (FORK_SEPOLIA + BENCH_APPEND)
+npm run benchmark:all-networks   # local then fork, in the correct order
+npm run benchmark:plot       # regenerate figures/ from the CSVs (no chain needed)
+```
+
+> ⚠️ **Run order matters.** `npm run benchmark` (the local pass) **truncates**
+> each CSV and rewrites only the `local` rows — it does **not** preserve any
+> `sepoliaFork` rows already present. The fork rows are added by
+> `npm run benchmark:fork`, which appends (`BENCH_APPEND=1`). So always run the
+> local pass *first*, then the fork pass — or just use
+> `npm run benchmark:all-networks`, which sequences them correctly. Running a
+> bare `npm run benchmark` after a fork pass will silently wipe the fork data.
+
 ### Benchmark network coverage
 
 The benchmark CSVs in `benchmarks/` carry a leading `network` column. Four are
