@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: LGPL v3.0
+// SPDX-License-Identifier: LGPL-2.1-only
 pragma solidity ^0.8.7;
 
 import "./auth.sol";
 
+/// @title Main — editorial pipeline (submission → EiC → AE → Reviewer → AE).
 contract Main {
 
     struct PaperStruct{
@@ -50,6 +51,7 @@ contract Main {
     event ReviewerReviewed(address indexed reviewer, bool approved, address indexed author);
     event AEReviewed(address indexed ae, bool recorded, address indexed author);
 
+    /// @notice Stage the author's paper metadata into the working slot.
     function getPaperInfo(string memory _name, string memory _email, string memory _abstractofpaper, string memory _papertitle, string memory _linkofpaper, address _authorAddress) public onlyAuthor {
         instanceofPaperStruct.name = _name;
         instanceofPaperStruct.email = _email;
@@ -65,6 +67,7 @@ contract Main {
     PaperStruct[] recievedByAE;
     mapping(address => uint256) indexFromEIC;
 
+    /// @notice Submit the staged paper into the EiC queue.
     function sendToEIC() public onlyAuthor {
 
            recievedByEIC.push(instanceofPaperStruct);
@@ -72,10 +75,13 @@ contract Main {
 
            emit PaperSubmitted(instanceofPaperStruct.authorAddress, instanceofPaperStruct.papertitle);
     }
+    /// @notice Papers awaiting EiC review.
     function getRecievedByEIC() public view returns(PaperStruct[] memory) {
        return recievedByEIC;
     }
 
+    /// @notice EiC accepts or rejects the current paper.
+    /// @param _EICapproval true forwards it to the AE queue; false drops it.
     function EICapproval(bool _EICapproval) public onlyEiC {
         if (_EICapproval == true) {
 
@@ -96,6 +102,7 @@ contract Main {
         }
         emit EICApprovalDecision(msg.sender, _EICapproval, instanceofPaperStruct.authorAddress);
     }
+    /// @notice Papers the EiC approved.
      function getApprovedByEIC() public view returns(PaperStruct[] memory)  {
        return approvedByEIC;
     }
@@ -105,10 +112,13 @@ contract Main {
     PaperStruct[] recievedByReviewer;
     mapping(address => uint256) indexFromAE;
 
+    /// @notice Papers awaiting AE handling.
     function getRecievedByAE() public view returns(PaperStruct[] memory) {
        return recievedByAE;
     }
 
+    /// @notice AE accepts or rejects the current paper.
+    /// @param _AEapproval true forwards it to the reviewer queue; false drops it.
     function AEapproval(bool _AEapproval) public onlyAE {
         if (_AEapproval == true) {
 
@@ -129,6 +139,7 @@ contract Main {
         }
         emit AEApprovalDecision(msg.sender, _AEapproval, instanceofPaperStruct.authorAddress);
     }
+    /// @notice Papers the AE approved.
      function getApprovedByAE() public view returns(PaperStruct[] memory)  {
        return approvedByAE;
     }
@@ -138,10 +149,14 @@ contract Main {
     PaperStruct[] RreceivedByAE;
     mapping(address => uint256) indexFromReviewer;
 
+    /// @notice Papers awaiting reviewer review.
     function getRecievedByReviewer() public view returns(PaperStruct[] memory) {
        return recievedByReviewer;
     }
 
+    /// @notice Reviewer records a review on the current paper.
+    /// @param _Reviewerapproval true returns the paper to the AE; false is a
+    ///        no-op (deferred limitation, SECURITY.md §4.2).
     function Reviewerapproval(bool _Reviewerapproval, string memory _Review, address _reviewerAddress) public onlyReviewer {
         instanceofPaperStruct.reviewofreviewer = _Review;
         instanceofPaperStruct.reviewerAddress = _reviewerAddress;
@@ -159,6 +174,7 @@ contract Main {
         // false branch is a no-op (deferred limitation, SECURITY.md §4.2).
         emit ReviewerReviewed(msg.sender, _Reviewerapproval, instanceofPaperStruct.authorAddress);
     }
+    /// @notice Papers the reviewer has reviewed.
      function getReviewedbyReviewer() public view returns(PaperStruct[] memory)  {
        return reviewedByReviewer;
     }
@@ -167,10 +183,14 @@ contract Main {
     PaperStruct[] reviewedByAE;
     mapping(address => uint256) indexFromRBAE;
 
+    /// @notice Reviewed papers returned to the AE.
     function RereceivedByAE() public view returns(PaperStruct[] memory) {
         return RreceivedByAE;
     }
 
+    /// @notice AE records final remarks on the current paper.
+    /// @param _AEReview true finalizes the paper into reviewedByAE; false is a
+    ///        no-op (deferred limitation, SECURITY.md §4.3).
     function ReviewedByAE(bool _AEReview, string memory _Review) public onlyAE {
       if(_AEReview == true)
       { instanceofPaperStruct.reviewofAE = _Review;
@@ -186,6 +206,7 @@ contract Main {
       emit AEReviewed(msg.sender, _AEReview, instanceofPaperStruct.authorAddress);
     }
 
+    /// @notice Papers finalized by the AE.
     function getReviewedByAE() public view returns(PaperStruct[] memory) {
         return reviewedByAE;
     }
