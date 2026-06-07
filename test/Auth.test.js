@@ -1,13 +1,3 @@
-// Coverage note (P2 follow-up, now resolved): auth.sol previously sat at
-// 92.31% branch coverage with two uncovered require-revert arms in
-// addOrRequestMember:
-//   - line 94, `require(memberExist == false)` in the request path, reachable
-//     when a direct-added member (e.g. a JOURNAL) later requests another role;
-//   - line 102, `require(memberRequested == true, "You need to Request First")`
-//     in the direct-add path, reachable when request=false is used for a
-//     non-JOURNAL address that never requested.
-// Both are now exercised by the "Registration: failure paths" tests below, so
-// auth.sol is at 100% branch coverage.
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
@@ -187,14 +177,38 @@ describe("Auth", function () {
       expect(pending.length).to.equal(0);
       expect(await auth.memberExistOrNot(eic.address)).to.equal(false);
     });
+
+    it("an approved member may deny someone else's pending request", async function () {
+      const { auth, journal, eic } = await loadFixture(deployAll);
+      // journal is an approved member; eic has a pending request.
+      await auth
+        .connect(journal)
+        .addOrRequestMember("J", "JOURNAL", "j@x.com", journal.address, true);
+      await auth
+        .connect(eic)
+        .addOrRequestMember("E", "EIC", "e@x.com", eic.address, true);
+
+      // journal (memberExist == true) denies eic's request, though not the requester.
+      await auth.connect(journal).denyRequest(eic.address);
+      expect((await auth.getApprovedOrRequestedMember(true)).length).to.equal(0);
+    });
+
+    it("a non-member who is not the requester cannot deny a request", async function () {
+      const { auth, eic, stranger } = await loadFixture(deployAll);
+      await auth
+        .connect(eic)
+        .addOrRequestMember("E", "EIC", "e@x.com", eic.address, true);
+
+      await expect(
+        auth.connect(stranger).denyRequest(eic.address)
+      ).to.be.revertedWith("Not authorized to deny this request");
+    });
   });
 
   describe("no payable hook (plain ETH transfer rejected)", function () {
     it("reverts on a plain ETH transfer (no receive/fallback)", async function () {
       const { auth, journal } = await loadFixture(deployAll);
-      // The misspelled `function recieve()` was removed entirely: Slither
-      // flagged a locked-ether vuln once it became a real `receive()`, and
-      // the workflow handles no value. The contract must now reject ETH.
+      // No receive/fallback (removed to avoid a locked-ether finding); ETH is rejected.
       await expect(
         journal.sendTransaction({ to: await auth.getAddress(), value: 100n })
       ).to.be.reverted;
@@ -222,15 +236,47 @@ describe("Auth", function () {
     });
   });
 
-  describe.skip("Access control negatives (unskipped in P5 once onlyJournal/onlyEiC modifiers land)", function () {
-    it("non-member should not be able to approve anyone's request", async function () {
-      // Today: approovingMember's power defaults to 0 when the caller isn't a
-      // member, and 0 <= anything is true, so a random EOA can approve any
-      // pending request. P5 will add a modifier enforcing that the caller is
-      // already an approved member with strictly-greater authority.
+  // P5: unskipped — approoveRequest requires the caller be the approving
+  // member; addOrRequestMember requires self-registration on the request path.
+  describe("Access control negatives (P5)", function () {
+    it("a non-member cannot approve anyone's pending request", async function () {
+      const { auth, journal, eic, stranger } = await loadFixture(deployAll);
+      await auth
+        .connect(journal)
+        .addOrRequestMember("J", "JOURNAL", "j@x.com", journal.address, true);
+      await auth
+        .connect(eic)
+        .addOrRequestMember("E", "EIC", "e@x.com", eic.address, true);
+
+      // Stranger (not an approved member) tries to approve eic.
+      await expect(
+        auth.connect(stranger).approoveRequest(eic.address, stranger.address)
+      ).to.be.revertedWith("Approver must be an approved member");
+
+      // Stranger cannot impersonate the journal as the approver either.
+      await expect(
+        auth.connect(stranger).approoveRequest(eic.address, journal.address)
+      ).to.be.revertedWith("Caller must be the approving member");
+
+      // The legitimate approver still succeeds.
+      await auth.connect(journal).approoveRequest(eic.address, journal.address);
+      expect(await auth.memberExistOrNot(eic.address)).to.equal(true);
     });
-    it("addOrRequestMember should reject calls where msg.sender != _userAddress", async function () {
-      // Today: anyone can register any other address. P5 adds the check.
+
+    it("addOrRequestMember rejects a request where msg.sender != _userAddress", async function () {
+      const { auth, eic, stranger } = await loadFixture(deployAll);
+      await expect(
+        auth
+          .connect(stranger)
+          .addOrRequestMember("E", "EIC", "e@x.com", eic.address, true)
+      ).to.be.revertedWith("Can only register your own address");
+
+      // Self-registration (msg.sender == _userAddress) still works.
+      await auth
+        .connect(eic)
+        .addOrRequestMember("E", "EIC", "e@x.com", eic.address, true);
+      const pending = await auth.findMember(eic.address, true);
+      expect(pending.role).to.equal("EIC");
     });
   });
 });

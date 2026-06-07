@@ -6,6 +6,43 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased] — revision 2026
 
 ### Added
+- **P5 — Security hardening: access control, events, and `SECURITY.md`.**
+  - *Role-based access control (addresses **R1**, **R4** — no access control /
+    no access modifiers anywhere).* `Main` and `Decision` now take an `Auth`
+    address at construction and gate every state-changing action by role:
+    `onlyAuthor` (submit), `onlyEiC`, `onlyAE`, `onlyReviewer` on `Main`;
+    `onlyEiC` on `Decision`. `Auth` itself now enforces self-only registration
+    (`addOrRequestMember` request path), approver-must-be-a-member
+    (`approoveRequest`), and authorized denial (`denyRequest`). Modifiers read a
+    new lightweight `Auth.memberPower(address)` view. All additions are
+    ABI-additive — successful role flows are unchanged; unauthorized callers
+    revert. `scripts/deploy.js` deploys `Auth` first and passes its address to
+    `Main`/`Decision`.
+  - *Events (addresses **R4** — auditability).* Every state-changing op emits an
+    event (`MemberRequested`/`MemberAdded`/`MemberApproved`/`MemberDenied`;
+    `PaperSubmitted`/`EICApprovalDecision`/`AEApprovalDecision`/
+    `ReviewerReviewed`/`AEReviewed`; `PaperReceived`/`EICFinalDecision`/
+    `PaperPublished`) for off-chain indexing and an on-chain audit trail.
+  - *`SECURITY.md` (addresses **R3** — security threats; **R4** — architectural
+    limitations not analyzed).* New standalone threat model (Sybil, role
+    collusion, address-linkability de-anonymization, metadata leakage), the P5
+    access-control summary, the deferred architectural limitations (§4.1–§4.6)
+    with test cross-references and forcing-function acceptance criteria, the
+    Slither accepted-risk register (§5), and reentrancy (§6) + EIP-7702 (§7)
+    rationale.
+  - *Static analysis.* `security/slither-report.md` records a project-wide
+    Slither run: **zero high/critical findings**; 60 low/informational results
+    (naming, boolean-equal, cache-array-length on the Echidna harnesses,
+    floating pragma) are documented as accepted risk. `security:slither` now
+    runs project-wide (`slither .`).
+  - *Tests.* The **5 access-control negative tests** previously `.skip`'d in P2
+    are unskipped and pass via the new modifiers (Auth ×2, Main ×1,
+    Decision ×2); two new `denyRequest`-guard tests keep contract coverage at
+    **100% statements/branches/functions/lines**. The **4 deferred data-model
+    bug tests** remain `.skip` with `SECURITY.md` §4.x cross-references and
+    forcing-function comments (fixing them would change the ABI / documented
+    data model — out of scope to preserve `v1.0-paper` parity). Suite: **36
+    passing, 4 pending**.
 - **P3 — Multi-network benchmark harness.** The benchmark suite now runs in two
   passes — a fast **local** Hardhat pass and a **sepoliaFork** pass against real
   Sepolia state at the pinned block — and every CSV carries a leading `network`
