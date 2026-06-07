@@ -37,13 +37,18 @@ async function main() {
     contracts: {},
   };
 
+  // Auth first; Main and Decision take its address as a constructor arg.
+  let authAddress;
+
   for (const name of CONTRACTS) {
     const Factory = await hre.ethers.getContractFactory(name);
-    const contract = await Factory.deploy();
+    const args = name === "Auth" ? [] : [authAddress];
+    const contract = await Factory.deploy(...args);
     const tx = contract.deploymentTransaction();
     await contract.waitForDeployment();
     const address = await contract.getAddress();
     const txHash = tx ? tx.hash : null;
+    if (name === "Auth") authAddress = address;
 
     const abiPath = path.join(ABI_DIR, `${name}.json`);
     if (!fs.existsSync(abiPath)) {

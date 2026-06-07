@@ -35,7 +35,7 @@
     "benchmark:state-growth": "hardhat run scripts/benchmark/state-growth.js",
     "benchmark:plot": "python3 scripts/plot.py",
     "security:lint": "solhint 'contracts/**/*.sol'",
-    "security:slither": "slither contracts/auth.sol; slither contracts/main.sol; slither contracts/Decision.sol",
+    "security:slither": "slither . --exclude-dependencies",
     "security:mythril": "docker run --rm -v \"$PWD/contracts:/c\" mythril/myth analyze /c/auth.sol --solv 0.8.19 -t 3 --execution-timeout 150; docker run --rm -v \"$PWD/contracts:/c\" mythril/myth analyze /c/main.sol --solv 0.8.19 -t 3 --execution-timeout 150; docker run --rm -v \"$PWD/contracts:/c\" mythril/myth analyze /c/Decision.sol --solv 0.8.19 -t 3 --execution-timeout 150",
     "security:echidna": "echidna contracts/echidna/EchidnaMain.sol --contract EchidnaMain --config echidna.config.yaml; echidna contracts/echidna/EchidnaAuth.sol --contract EchidnaAuth --config echidna.config.yaml; echidna contracts/echidna/EchidnaAuthGuarded.sol --contract EchidnaAuthGuarded --config echidna.guarded.yaml",
     "security:coverage": "hardhat coverage",

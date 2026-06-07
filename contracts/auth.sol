@@ -2,16 +2,9 @@
 pragma solidity ^0.8.7;
 
 contract Auth {
-    // NOTE: no payable receive/fallback. The publishing workflow handles no
-    // value transfer, so the contract deliberately rejects plain ETH. A prior
-    // version had `function recieve() external payable {}` (a misspelled
-    // regular function); promoting it to a real `receive()` made Slither flag
-    // a locked-ether vulnerability (ETH could be received but never withdrawn),
-    // so it was removed entirely.
+    // No payable receive/fallback: the workflow handles no value, and a real
+    // receive() triggered a Slither locked-ether finding. Plain ETH is rejected.
 
-    // ----------------------------------------------- MEMBER - REQUEST, APPROVE, ADD --------------------------------------------------
-
-    // Member Structure
     struct MemberStruct {
         string name;
         string role;
@@ -20,13 +13,17 @@ contract Auth {
         uint256 power;
     }
 
-    // Cached role-string hashes so addOrRequestMember does one keccak256 on
-    // the role parameter and compares against pre-hashed constants instead
-    // of recomputing four times per call.
+    // Pre-hashed roles: one keccak per call instead of recomputing per compare.
     bytes32 private constant JOURNAL_HASH  = keccak256("JOURNAL");
     bytes32 private constant EIC_HASH      = keccak256("EIC");
     bytes32 private constant AE_HASH       = keccak256("AE");
     bytes32 private constant REVIEWER_HASH = keccak256("REVIEWER");
+
+    // Events for off-chain indexing / audit trail.
+    event MemberRequested(address indexed user, string role);
+    event MemberAdded(address indexed user, string role);
+    event MemberApproved(address indexed user, address indexed approver, string role);
+    event MemberDenied(address indexed user);
 
     // Mapping indexes with a particular useraddresses
     mapping(address => uint256) indexFromRequest;
@@ -62,7 +59,15 @@ contract Auth {
         address _userAddress,
         bool request
     ) public {
-        // Hash role once instead of recomputing on every comparison below.
+        // Self-registration only. The direct-add path (request == false) is the
+        // internal approoveRequest call, where sender != _userAddress by design.
+        if (request) {
+            require(
+                msg.sender == _userAddress,
+                "Can only register your own address"
+            );
+        }
+
         bytes32 roleHash = keccak256(abi.encodePacked(_role));
 
         uint256 power;
@@ -78,9 +83,6 @@ contract Auth {
             power = 5;
         }
 
-        // Build the struct in memory and write to storage once via push /
-        // mapping assignment, instead of populating a shared storage scratchpad
-        // field-by-field and then copying it.
         MemberStruct memory m = MemberStruct({
             name: _name,
             role: _role,
@@ -97,6 +99,7 @@ contract Auth {
             indexFromRequest[_userAddress] = arrayOfRequestedMembers.length - 1;
             getRequestedMemberWithAddress[_userAddress] = m;
             memberRequested[_userAddress] = true;
+            emit MemberRequested(_userAddress, _role);
         } else {
             if (roleHash != JOURNAL_HASH) {
                 require(
@@ -109,6 +112,7 @@ contract Auth {
             arrayOfMembers.push(m);
             getMemberWithAddress[_userAddress] = m;
             memberExist[_userAddress] = true;
+            emit MemberAdded(_userAddress, _role);
         }
     }
 
@@ -129,6 +133,16 @@ contract Auth {
     function approoveRequest(address _userAddress, address approvingUserAddress)
         public
     {
+        // Only an approved member, acting as themselves, may approve.
+        require(
+            memberExist[approvingUserAddress],
+            "Approver must be an approved member"
+        );
+        require(
+            msg.sender == approvingUserAddress,
+            "Caller must be the approving member"
+        );
+
         MemberStruct memory memberTobeApproved = getRequestedMemberWithAddress[
             _userAddress
         ];
@@ -157,18 +171,34 @@ contract Auth {
         indexFromRequest[arrayOfRequestedMembers[index].userAddress] = index;
         arrayOfRequestedMembers.pop();
         delete indexFromRequest[_userAddress];
+
+        emit MemberApproved(_userAddress, approvingUserAddress, role);
     }
 
     function denyRequest(address _userAddress) public {
+        // Requester may withdraw; an approved member may reject.
+        require(
+            msg.sender == _userAddress || memberExist[msg.sender],
+            "Not authorized to deny this request"
+        );
+
         uint256 index = indexFromRequest[_userAddress];
         arrayOfRequestedMembers[index] = arrayOfRequestedMembers[arrayOfRequestedMembers.length - 1];
         indexFromRequest[arrayOfRequestedMembers[index].userAddress] = index;
         arrayOfRequestedMembers.pop();
         delete indexFromRequest[_userAddress];
+
+        emit MemberDenied(_userAddress);
     }
 
     // Function to know if member exist or not - will be useful in login and other features
     function memberExistOrNot(address _userAddress) public view returns (bool) {
         return memberExist[_userAddress];
+    }
+
+    // Role authority for cross-contract gating; 0 for non-members. Returns a
+    // bare uint (not the full MemberStruct) to keep Main/Decision bytecode small.
+    function memberPower(address _userAddress) public view returns (uint256) {
+        return getMemberWithAddress[_userAddress].power;
     }
 }

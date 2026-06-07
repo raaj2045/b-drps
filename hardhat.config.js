@@ -31,6 +31,9 @@ module.exports = {
   networks: {
     hardhat: {
       chainId: 31337,
+      // With the optimizer off, Main/Decision exceed EIP-170 after P5 (see
+      // SECURITY.md §4.6). Test-only flag; doesn't affect bytecode or gas.
+      allowUnlimitedContractSize: true,
       // Only forks when FORK_SEPOLIA is set, so default `npm test` and the
       // benchmark suite stay fast, offline, and key-free.
       ...(sepoliaForking ? { forking: sepoliaForking } : {}),

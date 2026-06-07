@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: LGPL v3.0
 pragma solidity ^0.8.7;
 
+import "./auth.sol";
+
 contract Decision {
 
-// Paper Structure
      struct PaperStruct{
         string name;
         string email;
@@ -16,16 +17,30 @@ contract Decision {
         string messagetoauthor;
     }
 
-// instance of paper struct to use it everywhere
     PaperStruct instanceofPaperStruct;
 
-// for manage published papers
+// Only the EiC (Auth power == 2) transfers papers in and renders the verdict.
+    Auth public immutable auth;
+
+    constructor(address authAddress) {
+        auth = Auth(authAddress);
+    }
+
+    modifier onlyEiC() {
+        require(auth.memberPower(msg.sender) == 2, "Caller is not the EiC");
+        _;
+    }
+
+// Events for off-chain indexing / audit trail.
+    event PaperReceived(address indexed eic, address indexed author, string papertitle);
+    event EICFinalDecision(address indexed eic, bool published, address indexed author);
+    event PaperPublished(address indexed author, string papertitle);
+
     PaperStruct[] Publishpaper;
     PaperStruct[] ReturnAuthor;
     PaperStruct[] RreceivedByEIC;
 
-// getting paper's information
-    function getPaperInfo(string memory _name, string memory _email, string memory _abstractofpaper, string memory _papertitle, string memory _linkofpaper,string memory _reviewofreviewer, string memory _reviewofAE, address _authorAddress) public {
+    function getPaperInfo(string memory _name, string memory _email, string memory _abstractofpaper, string memory _papertitle, string memory _linkofpaper,string memory _reviewofreviewer, string memory _reviewofAE, address _authorAddress) public onlyEiC {
         instanceofPaperStruct.name = _name;
         instanceofPaperStruct.email = _email;
         instanceofPaperStruct.abstractofpaper = _abstractofpaper;
@@ -36,35 +51,32 @@ contract Decision {
         instanceofPaperStruct.reviewofAE = _reviewofAE;
         RreceivedByEIC.push(instanceofPaperStruct);
 
+        emit PaperReceived(msg.sender, _authorAddress, _papertitle);
     }
 
-// for receive papers to the EIC
     function RerecievedByEIC() public view returns(PaperStruct[] memory) {
         return RreceivedByEIC;
     }
 
-// For getting decision of EIC
-    function EICDecision(bool _Decision, string memory _MessageToAuthor) public {
+    function EICDecision(bool _Decision, string memory _MessageToAuthor) public onlyEiC {
         instanceofPaperStruct.messagetoauthor = _MessageToAuthor;
         if (_Decision == true) {
             Publishpaper.push(instanceofPaperStruct);
             ReturnAuthor.push(instanceofPaperStruct);
             RreceivedByEIC.pop();
+            emit PaperPublished(instanceofPaperStruct.authorAddress, instanceofPaperStruct.papertitle);
         } else {
             ReturnAuthor.push(instanceofPaperStruct);
             RreceivedByEIC.pop();
 
         }
+        emit EICFinalDecision(msg.sender, _Decision, instanceofPaperStruct.authorAddress);
     }
 
-
-    // For getting published papers
-   
    function getPublishedpaper() public view returns(PaperStruct[] memory) {
        return Publishpaper;
    }
 
-// For return paper to the author
    function Returntoauthor() public view returns(PaperStruct[] memory) {
        return ReturnAuthor;
    }

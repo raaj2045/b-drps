@@ -1,13 +1,12 @@
 const { expect } = require("chai");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { deployAll } = require("./helpers/fixtures");
+const { deployAllRegistered } = require("./helpers/fixtures");
 
-// Tests stick to one paper per test. Multi-paper concurrent flows expose a
-// pop() queue-corruption bug documented in the deferred-bug suite below.
+// One paper per test: concurrent flows hit the pop() corruption (SECURITY.md §4.4).
 describe("Decision", function () {
   describe("Transfer from Main into Decision", function () {
     it("getPaperInfo pushes the paper into RreceivedByEIC and preserves all fields", async function () {
-      const { decision, eic, author } = await loadFixture(deployAll);
+      const { decision, eic, author } = await loadFixture(deployAllRegistered);
 
       await decision
         .connect(eic)
@@ -33,7 +32,7 @@ describe("Decision", function () {
 
   describe("EICDecision", function () {
     async function loadStagedFixture() {
-      const fx = await loadFixture(deployAll);
+      const fx = await loadFixture(deployAllRegistered);
       await fx.decision
         .connect(fx.eic)
         .getPaperInfo(
@@ -82,28 +81,68 @@ describe("Decision", function () {
 
   describe("Getters expose the published, returned, and pending queues", function () {
     it("getPublishedpaper, Returntoauthor, RerecievedByEIC return arrays without reverting on empty state", async function () {
-      const { decision } = await loadFixture(deployAll);
+      const { decision } = await loadFixture(deployAllRegistered);
       expect((await decision.getPublishedpaper()).length).to.equal(0);
       expect((await decision.Returntoauthor()).length).to.equal(0);
       expect((await decision.RerecievedByEIC()).length).to.equal(0);
     });
   });
 
-  describe.skip("[P5: bug fixes documented in SECURITY.md, deferred to preserve ABI parity with v1.0-paper]", function () {
+  // P5: unskipped — EICDecision and getPaperInfo are gated by onlyEiC.
+  describe("Access control (P5 onlyEiC modifier)", function () {
+    it("EICDecision is callable only by the EiC role", async function () {
+      const { decision, eic, stranger, author } = await loadStagedFixtureFor();
+
+      await expect(
+        decision.connect(stranger).EICDecision(true, "x")
+      ).to.be.revertedWith("Caller is not the EiC");
+      await expect(
+        decision.connect(author).EICDecision(true, "x")
+      ).to.be.revertedWith("Caller is not the EiC");
+
+      // The EiC still succeeds (ABI-additive).
+      await decision.connect(eic).EICDecision(true, "ok");
+      expect((await decision.getPublishedpaper()).length).to.equal(1);
+    });
+
+    it("getPaperInfo on Decision is callable only by the EiC role", async function () {
+      const { decision, stranger, author } = await loadFixture(deployAllRegistered);
+      await expect(
+        decision
+          .connect(stranger)
+          .getPaperInfo("n", "e", "a", "t", "l", "rr", "ae", author.address)
+      ).to.be.revertedWith("Caller is not the EiC");
+      await expect(
+        decision
+          .connect(author)
+          .getPaperInfo("n", "e", "a", "t", "l", "rr", "ae", author.address)
+      ).to.be.revertedWith("Caller is not the EiC");
+    });
+  });
+
+  // SKIP: deferred data-model limitation (SECURITY.md §4.4). Un-skipping is the
+  // acceptance criterion for a future fix.
+  describe.skip("[P5: deferred data-model limitation — see SECURITY.md §4.4]", function () {
     it("EICDecision should pop the paper being decided, not the last element of the queue", async function () {
-      // Today: EICDecision unconditionally does RreceivedByEIC.pop(), which
-      // removes the LAST element regardless of which paper the decision was
-      // for. Under interleaved submissions/decisions the queue corrupts.
-      // Fixing requires keying decisions to a paper id, which is an ABI
-      // change -- deferred per the locked plan.
-    });
-    it("EICDecision should be callable only by the EiC role (onlyEiC modifier)", async function () {
-      // Today: anyone can call EICDecision. P5 adds the role-check modifier.
-    });
-    it("getPaperInfo on Decision should be callable only by the EiC role transferring a paper from Main", async function () {
-      // Today: any caller can stuff arbitrary paper data into the Decision
-      // queue. P5 will gate this on either onlyEiC or by source-of-truth
-      // checking against Main.
+      // SECURITY.md §4.4 — pops the last element, not the decided paper.
     });
   });
 });
+
+// Stages one paper into Decision (as the EiC) for the access-control negatives.
+async function loadStagedFixtureFor() {
+  const fx = await loadFixture(deployAllRegistered);
+  await fx.decision
+    .connect(fx.eic)
+    .getPaperInfo(
+      "Author",
+      "au@x.com",
+      "An abstract.",
+      "A Title",
+      "https://gateway.pinata.cloud/ipfs/QmTestCid",
+      "R remark",
+      "AE remark",
+      fx.author.address
+    );
+  return fx;
+}

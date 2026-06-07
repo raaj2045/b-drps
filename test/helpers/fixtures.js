@@ -12,13 +12,15 @@ async function deployAll() {
   const Auth = await ethers.getContractFactory("Auth");
   const auth = await Auth.deploy();
   await auth.waitForDeployment();
+  const authAddress = await auth.getAddress();
 
+  // Main and Decision take the Auth address (P5 role gating).
   const Main = await ethers.getContractFactory("Main");
-  const main = await Main.deploy();
+  const main = await Main.deploy(authAddress);
   await main.waitForDeployment();
 
   const Decision = await ethers.getContractFactory("Decision");
-  const decision = await Decision.deploy();
+  const decision = await Decision.deploy(authAddress);
   await decision.waitForDeployment();
 
   return {
@@ -71,6 +73,16 @@ async function registerStandardRoles({ auth, journal, eic, ae, reviewer, author 
 }
 
 /**
+ * deployAll + registerStandardRoles. Use for tests driving gated Main/Decision
+ * functions, which require the actors to be approved Auth members (P5).
+ */
+async function deployAllRegistered() {
+  const fx = await deployAll();
+  await registerStandardRoles(fx);
+  return fx;
+}
+
+/**
  * Submits a paper to the Main contract: calls getPaperInfo (sets the shared
  * instanceofPaperStruct) then sendToEIC (pushes into the EiC queue).
  */
@@ -82,4 +94,4 @@ async function submitPaper(main, { author, name = "Author", email = "au@x.com", 
   return { name, email, abstract, title, link };
 }
 
-module.exports = { deployAll, registerStandardRoles, submitPaper };
+module.exports = { deployAll, deployAllRegistered, registerStandardRoles, submitPaper };
