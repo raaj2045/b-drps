@@ -80,8 +80,10 @@ def _save(fig, name):
 
 
 def plot_storage_growth():
-    """On-chain storage footprint vs. N papers: total bytes (linear growth)
-    and bytes/paper (flat => constant per-record footprint)."""
+    """On-chain storage vs. N papers: a single linearly rising line, with the
+    per-paper rate given as a slope annotation. Only metadata + the IPFS link
+    are stored on-chain (the manuscript is off-chain), so the slope is
+    constant regardless of manuscript size."""
     path = DATA_DIR / "storage_growth.csv"
     if not path.exists():
         print(f"  (skip storage-growth: {path.name} not found)")
@@ -89,31 +91,24 @@ def plot_storage_growth():
     rows = sorted(_read_csv(path), key=lambda r: int(r["N"]))
     N = [int(r["N"]) for r in rows]
     total_kb = [int(r["totalBytes"]) / 1024 for r in rows]
-    per_paper_kb = [int(r["bytesPerPaper"]) / 1024 for r in rows]
+    # Marginal per-paper rate from the two largest sweeps (excludes the
+    # one-time deployment overhead visible at small N).
+    slope_kb = (total_kb[-1] - total_kb[-2]) / (N[-1] - N[-2])
 
-    fig, ax1 = plt.subplots(figsize=(7, 4))
-    ax1.plot(N, total_kb, "o-", color="#4C72B0", label="Total storage")
-    ax1.set_xlabel("N (papers published)")
-    ax1.set_ylabel("Total storage (KiB)", color="#4C72B0")
-    ax1.tick_params(axis="y", labelcolor="#4C72B0")
+    fig, ax = plt.subplots(figsize=(7, 4))
+    ax.plot(N, total_kb, "o-", color="#4C72B0")
+    ax.set_xlabel("Papers published")
+    ax.set_ylabel("Total on-chain storage (KiB)")
+    ax.set_ylim(bottom=0)
+    mid = len(N) // 2
+    ax.annotate(
+        f"linear growth: ≈{slope_kb:.1f} KiB per paper\n"
+        "(metadata + IPFS link only; manuscript stored off-chain)",
+        xy=(N[mid], total_kb[mid]), xytext=(0.35, 0.15),
+        textcoords="axes fraction", fontsize=9, color="#2F5C94",
+        arrowprops=dict(arrowstyle="->", color="#4C72B0", lw=0.8))
 
-    ax2 = ax1.twinx()
-    ax2.plot(N, per_paper_kb, "s--", color="#55A868", label="Per paper")
-    ax2.set_ylabel("Storage per paper (KiB)", color="#55A868")
-    ax2.tick_params(axis="y", labelcolor="#55A868")
-    ax2.set_ylim(0, max(per_paper_kb) * 1.4)
-    ax2.grid(False)
-    ax2.spines["top"].set_visible(False)
-    # The per-paper line is constant by design: on-chain state holds only
-    # metadata + the IPFS link (manuscript off-chain). The small early
-    # decline is fixed deployment overhead amortizing over more papers.
-    ax2.annotate(
-        f"constant ≈{per_paper_kb[-1]:.1f} KiB/paper\n(metadata + IPFS link; manuscript off-chain)",
-        xy=(N[-1], per_paper_kb[-1]), xytext=(0.45, 0.32),
-        textcoords="axes fraction", fontsize=9, color="#3A7A4E",
-        arrowprops=dict(arrowstyle="->", color="#55A868", lw=0.8))
-
-    ax1.set_title("On-chain storage growth (slot-accounted, trace-validated)")
+    ax.set_title("On-chain storage growth")
     _save(fig, "storage_growth")
 
 
