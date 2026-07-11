@@ -181,3 +181,9 @@ npx hardhat coverage
 
 Raw output: `benchmarks/slither-*.json`, `benchmarks/solhint.txt`,
 `benchmarks/echidna-corpus*/` (reproducers), `coverage/` (HTML).
+
+Paper-ready CSV exports of the tables above (tool summary, OWASP coverage,
+Echidna invariant verdicts): `npm run security:csv` →
+`benchmarks/security_tools.csv`, `benchmarks/security_owasp.csv`,
+`benchmarks/security_echidna.csv`. Keep in sync with this document when
+re-running the tools.

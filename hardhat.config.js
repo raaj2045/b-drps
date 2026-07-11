@@ -31,6 +31,11 @@ module.exports = {
   networks: {
     hardhat: {
       chainId: 31337,
+      // The parallel-scalability sweep (scripts/benchmark/parallel.js) drives
+      // up to 100 concurrent distinct senders, and latency-v2 registers 50
+      // fresh members per pass. Default is 20; the first 20 addresses are
+      // unchanged (same mnemonic, longer derivation range).
+      accounts: { count: 130 },
       // With the optimizer off, Main/Decision exceed EIP-170 after P5 (see
       // SECURITY.md §4.6). Test-only flag; doesn't affect bytecode or gas.
       allowUnlimitedContractSize: true,
