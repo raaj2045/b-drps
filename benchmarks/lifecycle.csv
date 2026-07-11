@@ -1,17 +1,17 @@
 network,step,operation,label,gas,cumulativeGas
-local,1,getPaperInfo,Author: getPaperInfo,276390,276390
-local,2,sendToEIC,Author: sendToEIC,331885,608275
-local,3,EICapproval,EIC: approval,626129,1234404
-local,4,AEapproval,AE: approval,626107,1860511
-local,5,Reviewerapproval,Reviewer: review,882729,2743240
-local,6,ReviewedByAE,AE: final remarks,473481,3216721
-local,7,decisionGetPaperInfo,Decision: getPaperInfo,736442,3953163
-local,8,EICDecision,EIC: decision,854151,4807314
-sepoliaFork,1,getPaperInfo,Author: getPaperInfo,276390,276390
-sepoliaFork,2,sendToEIC,Author: sendToEIC,331885,608275
-sepoliaFork,3,EICapproval,EIC: approval,626129,1234404
-sepoliaFork,4,AEapproval,AE: approval,626107,1860511
-sepoliaFork,5,Reviewerapproval,Reviewer: review,882729,2743240
-sepoliaFork,6,ReviewedByAE,AE: final remarks,473481,3216721
-sepoliaFork,7,decisionGetPaperInfo,Decision: getPaperInfo,736442,3953163
-sepoliaFork,8,EICDecision,EIC: decision,854151,4807314
+local,1,getPaperInfo,Author: getPaperInfo,282499,282499
+local,2,sendToEIC,Author: sendToEIC,363444,645943
+local,3,EICapproval,EIC: approval,655519,1301462
+local,4,AEapproval,AE: approval,655497,1956959
+local,5,Reviewerapproval,Reviewer: review,912355,2869314
+local,6,ReviewedByAE,AE: final remarks,477427,3346741
+local,7,decisionGetPaperInfo,Decision: getPaperInfo,745362,4092103
+local,8,EICDecision,EIC: decision,864967,4957070
+sepoliaFork,1,getPaperInfo,Author: getPaperInfo,282499,282499
+sepoliaFork,2,sendToEIC,Author: sendToEIC,363444,645943
+sepoliaFork,3,EICapproval,EIC: approval,655519,1301462
+sepoliaFork,4,AEapproval,AE: approval,655497,1956959
+sepoliaFork,5,Reviewerapproval,Reviewer: review,912355,2869314
+sepoliaFork,6,ReviewedByAE,AE: final remarks,477427,3346741
+sepoliaFork,7,decisionGetPaperInfo,Decision: getPaperInfo,745362,4092103
+sepoliaFork,8,EICDecision,EIC: decision,864967,4957070
