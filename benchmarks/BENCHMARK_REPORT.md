@@ -1,14 +1,14 @@
 # Benchmark Report
 
-_Generated: 2026-07-11T13:16:52.492Z · network: sepoliaFork_
+_Generated: 2026-07-11T17:54:03.674Z · network: sepoliaFork_
 
 ## Methodology
 
 Measurements run on the in-process Hardhat network in two passes: a **local** pass (fast, offline) and a **sepoliaFork** pass that forks real Sepolia state at the pinned block (see README / CHANGELOG). The EVM is deterministic, so gas-per-operation is identical across both — the fork validates the local numbers against real-network parameters rather than changing them. Latency, throughput, and scalability depend on block cadence and gas limit (12.242s block interval, 30,000,000 gas/block).
 
-Sections 1 and 3 and the lifecycle are **dual-network** (`local` + `sepoliaFork` row-blocks); their per-operation gas tables are byte-for-byte identical across networks (Section 1, and `figures/gas_network_compare.png`), so the local measurements equal the real-Sepolia-state ones. Sections 2 and 4–7 are **local-only by design** — see the note in each. Tables are network-independent wherever gas-derived; wall-clock columns reflect local execution and are not cross-network meaningful. (This pass ran on `sepoliaFork`.)
+Sections 1 and 3 and the lifecycle are **dual-network** (`local` + `sepoliaFork` row-blocks); their per-operation gas tables are byte-for-byte identical across networks (Section 1), so the local measurements equal the real-Sepolia-state ones. Sections 2 and 4–7 are **local-only by design** — see the note in each. Tables are network-independent wherever gas-derived; wall-clock columns reflect local execution and are not cross-network meaningful. (This pass ran on `sepoliaFork`.)
 
-Every CSV in this directory carries a `network` column with one row-block per network; the figures (`figures/`) compare them. Sections run independently via `npm run benchmark:<section>`; both networks via `npm run benchmark:all-networks`.
+Every CSV in this directory carries a `network` column with one row-block per network. Sections run independently via `npm run benchmark:<section>`; both networks via `npm run benchmark:all-networks`.
 
 ## 1. Gas per operation
 
@@ -52,40 +52,40 @@ Per-operation confirmation latency over 50 transactions, decomposed into **measu
 
 > **Honesty label.** Only `execution` is a measurement. `propagation` and `blockInclusion` are drawn from the parametric model above (network label `mainnet-sim`), with a seeded RNG (seed 42) so runs are reproducible. This is **not** measured mainnet/testnet latency.
 
-| Operation | Component | Source | Mean (ms) | P95 (ms) | P99 (ms) | Min (ms) | Max (ms) |
-|---|---|---|---:|---:|---:|---:|---:|
-| **registerRequest** | execution | measured | 2 | 3 | 5 | 1 | 5 |
-|  | propagation | mainnet-sim | 200 | 327 | 401 | 99 | 401 |
-|  | blockInclusion | mainnet-sim | 11,825 | 15,990 | 16,247 | 8,090 | 16,247 |
-|  | total | composite | 12,027 | 16,157 | 16,428 | 8,249 | 16,428 |
-| **approveRequest** | execution | measured | 2 | 3 | 4 | 1 | 4 |
-|  | propagation | mainnet-sim | 201 | 385 | 398 | 64 | 398 |
-|  | blockInclusion | mainnet-sim | 12,089 | 14,226 | 15,910 | 6,872 | 15,910 |
-|  | total | composite | 12,292 | 14,353 | 16,112 | 7,141 | 16,112 |
-| **submitPaper** | execution | measured | 3 | 4 | 5 | 2 | 5 |
-|  | propagation | mainnet-sim | 210 | 332 | 422 | 114 | 422 |
-|  | blockInclusion | mainnet-sim | 11,923 | 14,819 | 16,546 | 8,771 | 16,546 |
-|  | total | composite | 12,136 | 15,023 | 16,796 | 9,060 | 16,796 |
-| **EICapproval** | execution | measured | 2 | 4 | 5 | 1 | 5 |
-|  | propagation | mainnet-sim | 205 | 309 | 318 | 116 | 318 |
-|  | blockInclusion | mainnet-sim | 11,580 | 15,116 | 15,713 | 7,393 | 15,713 |
-|  | total | composite | 11,787 | 15,330 | 15,933 | 7,593 | 15,933 |
-| **AEapproval** | execution | measured | 2 | 4 | 4 | 1 | 4 |
-|  | propagation | mainnet-sim | 216 | 358 | 385 | 98 | 385 |
-|  | blockInclusion | mainnet-sim | 12,677 | 16,164 | 17,413 | 9,621 | 17,413 |
-|  | total | composite | 12,895 | 16,306 | 17,624 | 9,802 | 17,624 |
-| **Reviewerapproval** | execution | measured | 2 | 3 | 3 | 1 | 3 |
-|  | propagation | mainnet-sim | 218 | 307 | 437 | 70 | 437 |
-|  | blockInclusion | mainnet-sim | 11,819 | 15,735 | 16,080 | 7,646 | 16,080 |
-|  | total | composite | 12,039 | 15,989 | 16,324 | 7,808 | 16,324 |
-| **ReviewedByAE** | execution | measured | 2 | 2 | 5 | 1 | 5 |
-|  | propagation | mainnet-sim | 215 | 369 | 379 | 75 | 379 |
-|  | blockInclusion | mainnet-sim | 11,786 | 14,350 | 16,485 | 7,024 | 16,485 |
-|  | total | composite | 12,003 | 14,628 | 16,679 | 7,201 | 16,679 |
-| **EICDecision** | execution | measured | 4 | 8 | 8 | 3 | 8 |
-|  | propagation | mainnet-sim | 212 | 334 | 379 | 96 | 379 |
-|  | blockInclusion | mainnet-sim | 12,214 | 14,841 | 15,205 | 8,850 | 15,205 |
-|  | total | composite | 12,431 | 15,064 | 15,367 | 9,120 | 15,367 |
+| Operation | Component | Source | Mean (ms) | P95 (ms) | Min (ms) | Max (ms) |
+|---|---|---|---:|---:|---:|---:|
+| **registerRequest** | execution | measured | 3 | 6 | 2 | 7 |
+|  | propagation | mainnet-sim | 200 | 327 | 99 | 401 |
+|  | blockInclusion | mainnet-sim | 11,825 | 15,990 | 8,090 | 16,247 |
+|  | total | composite | 12,028 | 16,158 | 8,254 | 16,429 |
+| **approveRequest** | execution | measured | 4 | 7 | 2 | 13 |
+|  | propagation | mainnet-sim | 201 | 385 | 64 | 398 |
+|  | blockInclusion | mainnet-sim | 12,089 | 14,226 | 6,872 | 15,910 |
+|  | total | composite | 12,294 | 14,354 | 7,142 | 16,112 |
+| **submitPaper** | execution | measured | 5 | 6 | 3 | 17 |
+|  | propagation | mainnet-sim | 210 | 332 | 114 | 422 |
+|  | blockInclusion | mainnet-sim | 11,923 | 14,819 | 8,771 | 16,546 |
+|  | total | composite | 12,138 | 15,025 | 9,061 | 16,797 |
+| **EICapproval** | execution | measured | 3 | 6 | 2 | 8 |
+|  | propagation | mainnet-sim | 205 | 309 | 116 | 318 |
+|  | blockInclusion | mainnet-sim | 11,580 | 15,116 | 7,393 | 15,713 |
+|  | total | composite | 11,788 | 15,332 | 7,594 | 15,934 |
+| **AEapproval** | execution | measured | 3 | 7 | 2 | 7 |
+|  | propagation | mainnet-sim | 216 | 358 | 98 | 385 |
+|  | blockInclusion | mainnet-sim | 12,677 | 16,164 | 9,621 | 17,413 |
+|  | total | composite | 12,896 | 16,311 | 9,803 | 17,624 |
+| **Reviewerapproval** | execution | measured | 4 | 8 | 2 | 16 |
+|  | propagation | mainnet-sim | 218 | 307 | 70 | 437 |
+|  | blockInclusion | mainnet-sim | 11,819 | 15,735 | 7,646 | 16,080 |
+|  | total | composite | 12,040 | 15,992 | 7,809 | 16,324 |
+| **ReviewedByAE** | execution | measured | 3 | 4 | 2 | 7 |
+|  | propagation | mainnet-sim | 215 | 369 | 75 | 379 |
+|  | blockInclusion | mainnet-sim | 11,786 | 14,350 | 7,024 | 16,485 |
+|  | total | composite | 12,004 | 14,629 | 7,202 | 16,679 |
+| **EICDecision** | execution | measured | 8 | 11 | 4 | 16 |
+|  | propagation | mainnet-sim | 212 | 334 | 96 | 379 |
+|  | blockInclusion | mainnet-sim | 12,214 | 14,841 | 8,850 | 15,205 |
+|  | total | composite | 12,434 | 15,070 | 9,124 | 15,368 |
 
 ![Latency decomposition](./figures/latency_decomposition.png)
 Raw data: [latency.csv](./latency.csv)
@@ -112,10 +112,9 @@ Theoretical upper bound assuming a block contains only that operation.
 - Operation: `submission (getPaperInfo + sendToEIC)`
 - Submissions: 100 (two txs each)
 - Blocks consumed: 200
-- Wall-clock: 603 ms
-- Local TPS (instant-mine, no block-time floor): 165.84
+- Wall-clock: 1107 ms
+- Local TPS (instant-mine, no block-time floor): 90.33
 
-![Analytical TPS by operation](./figures/throughput.png)
 Raw data: [throughput.csv](./throughput.csv)
 
 ## 4. Scalability
@@ -126,13 +125,12 @@ Full Auth->Main->Decision pipeline run for N papers.
 
 | N | Total gas | Mean gas / paper | Wall-clock (ms) | Mean ms / paper |
 |---:|---:|---:|---:|---:|
-| 1 | 4,957,138 | 4,957,138 | 17 | 17 |
-| 10 | 48,310,651 | 4,831,065 | 189 | 19 |
-| 50 | 241,002,371 | 4,820,047 | 920 | 18 |
-| 100 | 481,860,021 | 4,818,600 | 1,940 | 19 |
-| 500 | 2,408,765,221 | 4,817,530 | 13,899 | 28 |
+| 1 | 4,957,138 | 4,957,138 | 23 | 23 |
+| 10 | 48,310,651 | 4,831,065 | 316 | 32 |
+| 50 | 241,002,371 | 4,820,047 | 4,251 | 85 |
+| 100 | 481,860,021 | 4,818,600 | 2,229 | 22 |
+| 500 | 2,408,765,221 | 4,817,530 | 11,669 | 23 |
 
-![Pipeline scalability vs N](./figures/scalability.png)
 Raw data: [scalability.csv](./scalability.csv)
 
 ## 5. State-growth scalability
@@ -148,7 +146,6 @@ For each K, the relevant data structure is pre-seeded with K entries (distinct s
 | 1000 | 303,922 | 335,027 | 73,448 | 224,812 | 425,780 |
 | 5000 | 303,922 | 335,027 | 73,448 | 224,812 | 425,780 |
 
-![State-growth flatness](./figures/state_growth.png)
 Raw data: [state_growth.csv](./state_growth.csv)
 
 ## 6. Parallel-load scalability
@@ -162,28 +159,27 @@ N distinct clients fire transactions concurrently (`Promise.all`), for N = 10 �
 
 | N | Phase | Wall-clock (ms) | TPS | Mean tx (ms) | P95 tx (ms) | Max tx (ms) | Success | Queue intact |
 |---:|---|---:|---:|---:|---:|---:|---:|---|
-| 10 | registration | 15 | 666.67 | 14 | 14 | 14 | 10/10 | — |
-| 10 | submission | 27 | 37.04 | 27 | 27 | 27 | 1/10 | ✅ |
-| 20 | registration | 25 | 800 | 23 | 25 | 25 | 20/20 | — |
-| 20 | submission | 45 | 22.22 | 45 | 45 | 45 | 1/20 | ✅ |
-| 30 | registration | 44 | 681.82 | 42 | 44 | 44 | 30/30 | — |
-| 30 | submission | 64 | 15.63 | 64 | 64 | 64 | 1/30 | ✅ |
-| 40 | registration | 51 | 784.31 | 47 | 51 | 51 | 40/40 | — |
-| 40 | submission | 82 | 12.2 | 82 | 82 | 82 | 1/40 | ✅ |
-| 50 | registration | 61 | 819.67 | 59 | 61 | 61 | 50/50 | — |
-| 50 | submission | 99 | 10.1 | 99 | 99 | 99 | 1/50 | ✅ |
-| 60 | registration | 78 | 769.23 | 73 | 75 | 77 | 60/60 | — |
+| 10 | registration | 20 | 500 | 19 | 20 | 20 | 10/10 | — |
+| 10 | submission | 38 | 26.32 | 38 | 38 | 38 | 1/10 | ✅ |
+| 20 | registration | 26 | 769.23 | 25 | 26 | 26 | 20/20 | — |
+| 20 | submission | 42 | 23.81 | 42 | 42 | 42 | 1/20 | ✅ |
+| 30 | registration | 53 | 566.04 | 50 | 52 | 52 | 30/30 | — |
+| 30 | submission | 69 | 14.49 | 68 | 68 | 68 | 1/30 | ✅ |
+| 40 | registration | 52 | 769.23 | 49 | 51 | 51 | 40/40 | — |
+| 40 | submission | 83 | 12.05 | 83 | 83 | 83 | 1/40 | ✅ |
+| 50 | registration | 66 | 757.58 | 63 | 66 | 66 | 50/50 | — |
+| 50 | submission | 106 | 9.43 | 106 | 106 | 106 | 1/50 | ✅ |
+| 60 | registration | 77 | 779.22 | 73 | 76 | 76 | 60/60 | — |
 | 60 | submission | 120 | 8.33 | 120 | 120 | 120 | 1/60 | ✅ |
-| 70 | registration | 88 | 795.45 | 82 | 87 | 87 | 70/70 | — |
-| 70 | submission | 159 | 6.29 | 158 | 158 | 158 | 1/70 | ✅ |
-| 80 | registration | 101 | 792.08 | 96 | 100 | 100 | 80/80 | — |
-| 80 | submission | 164 | 6.1 | 164 | 164 | 164 | 1/80 | ✅ |
-| 90 | registration | 109 | 825.69 | 101 | 109 | 109 | 90/90 | — |
-| 90 | submission | 181 | 5.52 | 181 | 181 | 181 | 1/90 | ✅ |
-| 100 | registration | 124 | 806.45 | 117 | 122 | 123 | 100/100 | — |
-| 100 | submission | 205 | 4.88 | 205 | 205 | 205 | 1/100 | ✅ |
+| 70 | registration | 74 | 945.95 | 69 | 73 | 73 | 70/70 | — |
+| 70 | submission | 129 | 7.75 | 128 | 128 | 128 | 1/70 | ✅ |
+| 80 | registration | 84 | 952.38 | 79 | 82 | 83 | 80/80 | — |
+| 80 | submission | 137 | 7.3 | 137 | 137 | 137 | 1/80 | ✅ |
+| 90 | registration | 96 | 937.5 | 91 | 95 | 96 | 90/90 | — |
+| 90 | submission | 161 | 6.21 | 161 | 161 | 161 | 1/90 | ✅ |
+| 100 | registration | 106 | 943.4 | 101 | 105 | 105 | 100/100 | — |
+| 100 | submission | 202 | 4.95 | 191 | 191 | 191 | 1/100 | ✅ |
 
-![Parallel-load scalability](./figures/parallel_scalability.png)
 Raw data: [parallel_scalability.csv](./parallel_scalability.csv)
 
 ## 7. Storage growth (on-chain footprint)

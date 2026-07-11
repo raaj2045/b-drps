@@ -26,8 +26,8 @@ function reportHeader() {
   const authoritative =
     "Sections 1 and 3 and the lifecycle are **dual-network** (`local` + " +
     "`sepoliaFork` row-blocks); their per-operation gas tables are " +
-    "byte-for-byte identical across networks (Section 1, and " +
-    "`figures/gas_network_compare.png`), so the local measurements equal the " +
+    "byte-for-byte identical across networks (Section 1), so the local " +
+    "measurements equal the " +
     "real-Sepolia-state ones. Sections 2 and 4–7 are **local-only by design** — see " +
     "the note in each. Tables are network-independent wherever gas-derived; " +
     "wall-clock columns reflect local execution and are not cross-network " +
@@ -51,7 +51,7 @@ function reportHeader() {
     authoritative,
     "",
     "Every CSV in this directory carries a `network` column with one row-block " +
-    "per network; the figures (`figures/`) compare them. Sections run " +
+    "per network. Sections run " +
     "independently via `npm run benchmark:<section>`; both networks via " +
     "`npm run benchmark:all-networks`.",
     "",

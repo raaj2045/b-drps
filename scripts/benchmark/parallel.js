@@ -148,8 +148,7 @@ function renderSection(data) {
       `${r.meanTxMs} | ${r.p95TxMs} | ${r.maxTxMs} | ${r.success}/${r.N} | ${intact} |`
     );
   }
-  lines.push("\n![Parallel-load scalability](./figures/parallel_scalability.png)");
-  lines.push("Raw data: [parallel_scalability.csv](./parallel_scalability.csv)");
+  lines.push("\nRaw data: [parallel_scalability.csv](./parallel_scalability.csv)");
   return lines.join("\n");
 }
 

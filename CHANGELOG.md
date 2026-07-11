@@ -24,6 +24,12 @@ for the response-to-reviewers letter.
 | sc10-pagination | Bounded paginated getters (Main/Decision/Auth) close OWASP SC10 | **R3** (security analysis acts on its findings), **R4** (DoS surface removed without ABI break) |
 
 ### Changed
+- **Figure set pruned to the two that carry non-tabular information**:
+  `latency_decomposition` (component composition of confirmation latency)
+  and `storage_growth` (linear total vs. flat per-paper trend). The gas
+  parity proof, lifecycle/cost, throughput, scalability, state-growth, and
+  parallel-sweep results are communicated by their CSVs and report tables;
+  their figures were removed along with their plotting code.
 - **Latency benchmark consolidated** (`refactor/consolidate-latency`): the
   original interval-mining latency section (5 samples at a real 12 s block
   interval, mean/min/max only) is removed; the decomposition suite **is**
