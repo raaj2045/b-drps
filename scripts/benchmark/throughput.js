@@ -38,28 +38,32 @@ async function run() {
     analytical[name] = { gas, opsPerBlock: perBlock, tps: Number(tps.toFixed(2)) };
   }
 
-  // Empirical: 100 sendToEIC calls back-to-back under instant mine.
+  // Empirical: 100 full submissions (stage + send) back-to-back under instant
+  // mine. Each submission stages a distinct synthetic author -- the queue
+  // guards reject duplicate authors, so the pre-fix single-author loop of
+  // bare sendToEIC calls is no longer representable (it was measuring
+  // corrupted duplicate-queue state anyway).
   await setMining({ auto: true });
   const ctx = await deployAll();
   await registerRolesWithGas(ctx);
-  await (await ctx.main.connect(ctx.author).getPaperInfo(
-    "A", "a@x.com", "abs", "Title", "link", ctx.author.address)).wait();
+  const { syntheticAddress } = require("./lib");
 
   const startBlock = await hre.ethers.provider.getBlockNumber();
   const N = 100;
   const t0 = Date.now();
-  const txs = [];
   for (let i = 0; i < N; i++) {
-    txs.push(await ctx.main.connect(ctx.author).sendToEIC());
+    await (await ctx.main.connect(ctx.author).getPaperInfo(
+      `A${i}`, `a${i}@x.com`, "abs", `Title ${i}`, `link${i}`, syntheticAddress(i)
+    )).wait();
+    await (await ctx.main.connect(ctx.author).sendToEIC()).wait();
   }
-  await Promise.all(txs.map((t) => t.wait()));
   const elapsed = Date.now() - t0;
   const endBlock = await hre.ethers.provider.getBlockNumber();
 
   return {
     analytical,
     empirical: {
-      op: "sendToEIC",
+      op: "submission (getPaperInfo + sendToEIC)",
       txCount: N,
       blocksConsumed: endBlock - startBlock,
       wallClockMs: elapsed,
@@ -80,7 +84,7 @@ function renderSection(data) {
   lines.push("\n### Empirical (local instant-mine sanity check)\n");
   const e = data.empirical;
   lines.push(`- Operation: \`${e.op}\``);
-  lines.push(`- Transactions: ${e.txCount}`);
+  lines.push(`- Submissions: ${e.txCount} (two txs each)`);
   lines.push(`- Blocks consumed: ${e.blocksConsumed}`);
   lines.push(`- Wall-clock: ${e.wallClockMs} ms`);
   lines.push(`- Local TPS (instant-mine, no block-time floor): ${e.localTps}`);

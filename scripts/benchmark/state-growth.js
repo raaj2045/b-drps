@@ -20,29 +20,38 @@ async function run() {
     const ctx = await deployAll();
     await registerRolesWithGas(ctx);
 
-    // ---- Auth: pre-seed K REVIEWER requests with synthetic addresses ----
+    // ---- Auth: pre-seed K approved members with synthetic addresses ----
+    // P5's self-registration guard (msg.sender == _userAddress on the request
+    // path) rules out bulk synthetic *requests*; the JOURNAL direct-add path
+    // has no such check, so K now grows the approved-members array instead of
+    // the pending-requests array. Probes are real signers self-registering.
     for (let i = 0; i < K; i++) {
-      await getReceipt(await ctx.auth.connect(ctx.ae).addOrRequestMember(
-        `Bulk${i}`, "REVIEWER", `b${i}@x.com`, syntheticAddress(i), true
+      await getReceipt(await ctx.auth.connect(ctx.journal).addOrRequestMember(
+        `Bulk${i}`, "JOURNAL", `b${i}@x.com`, syntheticAddress(i), false
       ));
       if ((i + 1) % 1000 === 0) {
         console.log(`    K=${K}: auth-seeded ${i + 1}/${K}`);
       }
     }
 
-    const newReqAddr = syntheticAddress(K);
-    const r1 = await getReceipt(await ctx.auth.connect(ctx.ae).addOrRequestMember(
-      "Probe", "REVIEWER", "probe@x.com", newReqAddr, true
+    const probeReq = ctx.rest[1];
+    const probeDeny = ctx.rest[2];
+    const r1 = await getReceipt(await ctx.auth.connect(probeReq).addOrRequestMember(
+      "Probe", "REVIEWER", "probe@x.com", probeReq.address, true
     ));
     const gasAddRequest = Number(r1.gasUsed);
 
+    await getReceipt(await ctx.auth.connect(probeDeny).addOrRequestMember(
+      "ProbeDeny", "REVIEWER", "pd@x.com", probeDeny.address, true
+    ));
+
     const r2 = await getReceipt(
-      await ctx.auth.connect(ctx.ae).approoveRequest(syntheticAddress(0), ctx.ae.address)
+      await ctx.auth.connect(ctx.ae).approoveRequest(probeReq.address, ctx.ae.address)
     );
     const gasApprove = Number(r2.gasUsed);
 
     const r3 = await getReceipt(
-      await ctx.auth.connect(ctx.ae).denyRequest(syntheticAddress(1))
+      await ctx.auth.connect(ctx.ae).denyRequest(probeDeny.address)
     );
     const gasDeny = Number(r3.gasUsed);
 
@@ -80,7 +89,10 @@ function renderSection(data) {
     "For each K, the relevant data structure is pre-seeded with K entries " +
     "(distinct synthetic addresses), then one more operation is measured. " +
     "Flat columns indicate O(1) per-op cost regardless of state size; rising " +
-    "columns indicate an O(n) regression to investigate.\n"
+    "columns indicate an O(n) regression to investigate. Auth seeding grows " +
+    "the approved-members array via the JOURNAL direct-add path (post-P5, " +
+    "requests are strictly self-registered, so pending requests cannot be " +
+    "bulk-seeded); pipeline seeding queues K papers by distinct authors.\n"
   );
   lines.push(
     "> **Local-only, valid cross-network.** Every column here is a gas " +
