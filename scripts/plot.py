@@ -80,10 +80,10 @@ def _save(fig, name):
 
 
 def plot_storage_growth():
-    """On-chain storage vs. N papers: a single linearly rising line, with the
-    per-paper rate given as a slope annotation. Only metadata + the IPFS link
-    are stored on-chain (the manuscript is off-chain), so the slope is
-    constant regardless of manuscript size."""
+    """On-chain storage vs. N papers: a single, unannotated linearly rising
+    line. The explanation of the linear growth (what metadata is stored, why
+    the slope is constant) lives in benchmarks/storage_growth_note.txt as
+    ready-to-adapt paper text."""
     path = DATA_DIR / "storage_growth.csv"
     if not path.exists():
         print(f"  (skip storage-growth: {path.name} not found)")
@@ -94,20 +94,14 @@ def plot_storage_growth():
     # Marginal per-paper rate from the two largest sweeps (excludes the
     # one-time deployment overhead visible at small N).
     slope_kb = (total_kb[-1] - total_kb[-2]) / (N[-1] - N[-2])
+    print(f"  (storage slope ~{slope_kb:.1f} KiB/paper; explanation in "
+          "benchmarks/storage_growth_note.txt)")
 
     fig, ax = plt.subplots(figsize=(7, 4))
     ax.plot(N, total_kb, "o-", color="#4C72B0")
     ax.set_xlabel("Papers published")
     ax.set_ylabel("Total on-chain storage (KiB)")
     ax.set_ylim(bottom=0)
-    mid = len(N) // 2
-    ax.annotate(
-        f"linear growth: ≈{slope_kb:.1f} KiB per paper\n"
-        "(metadata + IPFS link only; manuscript stored off-chain)",
-        xy=(N[mid], total_kb[mid]), xytext=(0.35, 0.15),
-        textcoords="axes fraction", fontsize=9, color="#2F5C94",
-        arrowprops=dict(arrowstyle="->", color="#4C72B0", lw=0.8))
-
     ax.set_title("On-chain storage growth")
     _save(fig, "storage_growth")
 
