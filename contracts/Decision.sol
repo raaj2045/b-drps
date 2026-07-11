@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: LGPL v3.0
+// SPDX-License-Identifier: LGPL-2.1-only
 pragma solidity ^0.8.7;
 
 import "./auth.sol";
 
+/// @title Decision — final EiC verdict (publish or return to author).
 contract Decision {
 
      struct PaperStruct{
@@ -40,6 +41,7 @@ contract Decision {
     PaperStruct[] ReturnAuthor;
     PaperStruct[] RreceivedByEIC;
 
+    /// @notice EiC transfers a finalized paper from Main into the decision queue.
     function getPaperInfo(string memory _name, string memory _email, string memory _abstractofpaper, string memory _papertitle, string memory _linkofpaper,string memory _reviewofreviewer, string memory _reviewofAE, address _authorAddress) public onlyEiC {
         instanceofPaperStruct.name = _name;
         instanceofPaperStruct.email = _email;
@@ -54,10 +56,13 @@ contract Decision {
         emit PaperReceived(msg.sender, _authorAddress, _papertitle);
     }
 
+    /// @notice Papers awaiting the EiC's final decision.
     function RerecievedByEIC() public view returns(PaperStruct[] memory) {
         return RreceivedByEIC;
     }
 
+    /// @notice EiC renders the final verdict on the current paper.
+    /// @param _Decision true publishes the paper; false returns it to the author.
     function EICDecision(bool _Decision, string memory _MessageToAuthor) public onlyEiC {
         instanceofPaperStruct.messagetoauthor = _MessageToAuthor;
         if (_Decision == true) {
@@ -73,10 +78,12 @@ contract Decision {
         emit EICFinalDecision(msg.sender, _Decision, instanceofPaperStruct.authorAddress);
     }
 
+    /// @notice Published papers.
    function getPublishedpaper() public view returns(PaperStruct[] memory) {
        return Publishpaper;
    }
 
+    /// @notice Papers returned to their authors with a decision message.
    function Returntoauthor() public view returns(PaperStruct[] memory) {
        return ReturnAuthor;
    }

@@ -5,7 +5,28 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased] — revision 2026
 
+### Reviewer-concern traceability
+
+Each merged revision PR mapped to the reviewer concerns (R1–R4) it addresses —
+for the response-to-reviewers letter.
+
+| PR | Change | Addresses |
+|---|---|---|
+| #1 | Hardhat migration + Pinata IPFS pinning | **R1** (Web3.storage discontinued), **R4** (Truffle-sunset risk) |
+| #3 | Contract test suite + coverage | **R1** (no tests), **R3** (no rigorous validation), **R4** (no test methodology) |
+| #4 / #5 | Sepolia fork for realistic measurements | **R3** (Ganache-only evaluation), **R4** (no real testnet conditions) |
+| #6 | Multi-network benchmark harness | **R3** (no latency/throughput/scalability), **R4** (single-point measurements, no variance) |
+| #7 | README benchmark methodology | **R3** (analytical depth) |
+| #8 | Security hardening (access control, events, `SECURITY.md`) | **R1** (no access control), **R3** (no security analysis), **R4** (no threat model / access modifiers / events) |
+| P7 | Repository hygiene (this PR) | **R3** (writing clarity), **R4** (LICENSE/SPDX consistency) |
+
 ### Added
+- **P7 — Repository hygiene.** Concise NatSpec (`@notice`, plus `@param`/`@return`
+  where non-obvious) on every public/external function in `Auth`, `Main`, and
+  `Decision`; SPDX headers in all `.sol` files corrected to
+  `LGPL-2.1-only` (matching the `LICENSE`); `CITATION.cff` added; and the
+  reviewer-concern traceability section. `LICENSE` is unchanged (canonical
+  LGPL-2.1).
 - **P5 — Security hardening: access control, events, and `SECURITY.md`.**
   - *Role-based access control (addresses **R1**, **R4** — no access control /
     no access modifiers anywhere).* `Main` and `Decision` now take an `Auth`

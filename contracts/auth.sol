@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL v3.0
+// SPDX-License-Identifier: LGPL-2.1-only
 pragma solidity ^0.8.7;
 
 contract Auth {
@@ -38,7 +38,8 @@ contract Auth {
     MemberStruct[] arrayOfRequestedMembers;
     mapping(address => bool) memberRequested;
 
-    // For getting the info of members(true = requested member info and  false = approoved member info)
+    /// @notice List members, either pending requests or approved.
+    /// @param request true for the pending-requests list, false for approved members.
     function getApprovedOrRequestedMember(bool request)
         public
         view
@@ -51,7 +52,9 @@ contract Auth {
         }
     }
 
-    // function to add or request member (true = request member | false = directly add member | Journal will be directly added as a member)
+    /// @notice Register a member: request approval (self only) or add directly.
+    /// @param request true to request approval, false to add directly (the
+    ///        internal approval path; a JOURNAL is always added directly).
     function addOrRequestMember(
         string memory _name,
         string memory _role,
@@ -116,7 +119,8 @@ contract Auth {
         }
     }
 
-    // to find member using address (true = find from requested members | false = find from approoved members)
+    /// @notice Fetch a member's record (zeroed struct if not found).
+    /// @param requestedMember true to search pending requests, false for approved.
     function findMember(address _userAddress, bool requestedMember)
         public
         view
@@ -129,7 +133,10 @@ contract Auth {
         }
     }
 
-    // function to approove request
+    /// @notice Approve a pending request, promoting it to an approved member.
+    /// @param _userAddress the requester being approved.
+    /// @param approvingUserAddress the approving member; must equal msg.sender
+    ///        and hold authority at least as high as the requested role.
     function approoveRequest(address _userAddress, address approvingUserAddress)
         public
     {
@@ -175,6 +182,8 @@ contract Auth {
         emit MemberApproved(_userAddress, approvingUserAddress, role);
     }
 
+    /// @notice Remove a pending request — the requester withdrawing, or an
+    ///         approved member rejecting it.
     function denyRequest(address _userAddress) public {
         // Requester may withdraw; an approved member may reject.
         require(
@@ -191,13 +200,14 @@ contract Auth {
         emit MemberDenied(_userAddress);
     }
 
-    // Function to know if member exist or not - will be useful in login and other features
+    /// @notice Whether an address is an approved member.
     function memberExistOrNot(address _userAddress) public view returns (bool) {
         return memberExist[_userAddress];
     }
 
-    // Role authority for cross-contract gating; 0 for non-members. Returns a
-    // bare uint (not the full MemberStruct) to keep Main/Decision bytecode small.
+    /// @notice Role power of an approved member (0 if not a member). Read by
+    ///         Main/Decision for role gating; returns a bare uint rather than
+    ///         the full MemberStruct to keep their bytecode small.
     function memberPower(address _userAddress) public view returns (uint256) {
         return getMemberWithAddress[_userAddress].power;
     }
