@@ -293,9 +293,8 @@ def plot_latency_decomposition():
     if not path.exists():
         print(f"  (skip latency-decomposition: {path.name} not found)")
         return
-    rows = _authoritative(_read_csv(path))
-    n_max = max(int(r["N"]) for r in rows)
-    rows = [r for r in rows if int(r["N"]) == n_max]
+    rows = _read_csv(path)  # single mainnet-sim block, no network variants
+    n_samples = 50
     ops = list(dict.fromkeys(r["operation"] for r in rows))
     comp = {
         c: [int(next(r for r in rows
@@ -336,46 +335,11 @@ def plot_latency_decomposition():
     ax.yaxis.set_major_formatter(
         mtick.FuncFormatter(lambda v, _: f"{v/1000:.0f}k"))
     ax.set_title(
-        f"Confirmation-latency decomposition, N={n_max} samples/op\n"
+        f"Confirmation-latency decomposition, {n_samples} transactions/op\n"
         "(execution measured; propagation + inclusion from the mainnet-sim model)")
     ax.legend(frameon=False, fontsize=8, loc="center left",
               bbox_to_anchor=(1.02, 0.5))
     _save(fig, "latency_decomposition")
-
-
-def plot_latency_by_n():
-    """Grouped bars of the composite total mean per operation at N=10/25/50,
-    with min–P95 whiskers: shows the estimates are stable in sample size."""
-    path = DATA_DIR / "latency.csv"
-    if not path.exists():
-        print(f"  (skip latency-by-n: {path.name} not found)")
-        return
-    rows = [r for r in _authoritative(_read_csv(path)) if r["component"] == "total"]
-    ns = sorted({int(r["N"]) for r in rows})
-    ops = list(dict.fromkeys(r["operation"] for r in rows))
-    by_n = {n: {r["operation"]: r for r in rows if int(r["N"]) == n} for n in ns}
-
-    import numpy as np
-    x = np.arange(len(ops))
-    width = 0.8 / len(ns)
-    palette = ["#A8C4E0", "#6A94C4", "#2F5C94"]
-    fig, ax = plt.subplots(figsize=(8.5, 4.5))
-    for i, n in enumerate(ns):
-        means = [int(by_n[n][op]["meanMs"]) for op in ops]
-        lo = [m - int(by_n[n][op]["minMs"]) for m, op in zip(means, ops)]
-        hi = [int(by_n[n][op]["p95Ms"]) - m for m, op in zip(means, ops)]
-        ax.bar(x + i * width, means, width, yerr=[lo, hi], capsize=2,
-               color=palette[i % len(palette)], edgecolor="black",
-               linewidth=0.4, label=f"N={n}", error_kw={"linewidth": 0.7})
-    ax.set_xticks(x + width * (len(ns) - 1) / 2)
-    ax.set_xticklabels(ops, rotation=25, ha="right", fontsize=9)
-    ax.set_ylabel("Total latency (ms), composite model")
-    ax.yaxis.set_major_formatter(
-        mtick.FuncFormatter(lambda v, _: f"{v/1000:.0f}k"))
-    ax.set_title("Composite total latency is stable across sample sizes\n"
-                 "(bars = mean, whiskers = min…P95; mainnet-sim model)")
-    ax.legend(frameon=False)
-    _save(fig, "latency_by_n")
 
 
 def plot_parallel():
@@ -436,7 +400,6 @@ def main():
     plot_lifecycle()
     plot_cost()
     plot_latency_decomposition()
-    plot_latency_by_n()
     plot_throughput()
     plot_scalability()
     plot_state_growth()

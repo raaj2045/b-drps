@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { deployAll } = require("./helpers/fixtures");
+const { deployAll, deployAllRegistered } = require("./helpers/fixtures");
 
 describe("Auth", function () {
   describe("Registration: each role takes the documented path", function () {
@@ -305,6 +305,37 @@ describe("Auth", function () {
         .addOrRequestMember("E", "EIC", "e@x.com", eic.address, true);
       const pending = await auth.findMember(eic.address, true);
       expect(pending.role).to.equal("EIC");
+    });
+  });
+
+  describe("Bounded reads (SC10 pagination)", function () {
+    it("memberPage slices the approved list and agrees with memberCount", async function () {
+      const { auth } = await loadFixture(deployAllRegistered);
+
+      const count = Number(await auth.memberCount(false));
+      expect(count).to.be.greaterThan(2); // the five registered roles
+      const firstTwo = await auth.memberPage(false, 0, 2);
+      expect(firstTwo.length).to.equal(2);
+      const rest = await auth.memberPage(false, 2, 100);
+      expect(rest.length).to.equal(count - 2);
+
+      const whole = await auth.getApprovedOrRequestedMember(false);
+      expect(firstTwo[0].userAddress).to.equal(whole[0].userAddress);
+      expect(rest[0].userAddress).to.equal(whole[2].userAddress);
+    });
+
+    it("memberPage covers the pending-requests list and past-the-end offsets", async function () {
+      const { auth, stranger } = await loadFixture(deployAllRegistered);
+      expect(await auth.memberCount(true)).to.equal(0);
+      expect((await auth.memberPage(true, 0, 10)).length).to.equal(0);
+
+      await auth.connect(stranger).addOrRequestMember(
+        "S", "REVIEWER", "s@x.com", stranger.address, true);
+      expect(await auth.memberCount(true)).to.equal(1);
+      const page = await auth.memberPage(true, 0, 10);
+      expect(page.length).to.equal(1);
+      expect(page[0].userAddress).to.equal(stranger.address);
+      expect((await auth.memberPage(true, 1, 10)).length).to.equal(0);
     });
   });
 });

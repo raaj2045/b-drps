@@ -6,10 +6,10 @@ For each K, the relevant data structure is pre-seeded with K entries (distinct s
 
 | K | addOrRequestMember | approoveRequest | denyRequest | sendToEIC | EICapproval |
 |---:|---:|---:|---:|---:|---:|
-| 10 | 303,922 | 335,005 | 73,448 | 224,790 | 425,802 |
-| 100 | 303,922 | 335,005 | 73,448 | 224,790 | 425,802 |
-| 1000 | 303,922 | 335,005 | 73,448 | 224,790 | 425,802 |
-| 5000 | 303,922 | 335,005 | 73,448 | 224,790 | 425,802 |
+| 10 | 303,922 | 335,027 | 73,448 | 224,812 | 425,780 |
+| 100 | 303,922 | 335,027 | 73,448 | 224,812 | 425,780 |
+| 1000 | 303,922 | 335,027 | 73,448 | 224,812 | 425,780 |
+| 5000 | 303,922 | 335,027 | 73,448 | 224,812 | 425,780 |
 
 ![State-growth flatness](./figures/state_growth.png)
 Raw data: [state_growth.csv](./state_growth.csv)

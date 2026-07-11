@@ -77,6 +77,22 @@ mappings and guards only, no signature changes:
 All 7 Echidna invariants pass at 50k+ calls each; unit regressions live in
 `test/Auth.test.js` and `test/Main.test.js` under *"Fuzz-finding regressions"*.
 
+## 3b. Bounded reads — SC10 pagination (`fix/sc10-pagination`)
+
+The whole-array getters (`getRecievedByEIC`, `getApprovedOrRequestedMember`,
+…) grow O(n) and can exceed RPC response limits at scale (OWASP SC10, DoS).
+Closed additively — no signature changes, whole-array getters retained for
+frontend compatibility:
+
+- **Main / Decision**: `queueLength(id)` + `queuePage(id, offset, limit)` over
+  every paper array (queue ids documented at `_queueById`).
+- **Auth**: `memberCount(request)` + `memberPage(request, offset, limit)` over
+  the approved and pending member lists.
+
+Pages are clamped to the array end; an offset past the end returns an empty
+array; unknown queue ids revert. Regression-tested in all three test suites
+(*"Bounded reads (SC10 pagination)"*).
+
 ---
 
 ## 4. Deferred architectural limitations
