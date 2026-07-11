@@ -1,7 +1,7 @@
 tool,version,category,result
-Slither,0.11.5,SAST (static),0 High / 0 Medium / 0 Low; 58 informational. One Medium (locked-ether) found on an earlier revision and fixed.
-Mythril,0.24.8,Symbolic execution,No issues at -t 1 and -t 3 on all three contracts (bounded; --execution-timeout 150).
-Echidna,2.3.2,Property fuzzing,2 invariants falsified (real bugs: EIC queue index corruption; member eviction) -- both fixed; all 7 invariants pass at 50k+ calls.
-Solhint,6.2.1,Linter / SAST-lite,"0 errors, 114 warnings (all style/documentation)."
-solidity-coverage,toolbox,Dynamic test coverage,100% stmt / 100% func / 100% line / 98.81% branch over 43 passing tests.
-SolidityScan,Remix plugin (2026-07-11),SAST (cloud),"No new exploitable findings. Free-tier summary: 33 finding titles (severities paywalled) -- 2 false positives (single-arg abi.encodePacked), rest map to known informational classes (NatSpec/style, gas optimization, floating pragma, boolean equality) already reported by Slither/Solhint."
+Slither,0.11.5,SAST (static),"No high, medium, or low vulnerabilities; 58 informational (style) findings. One medium finding (locked ether) on an earlier revision was fixed."
+Mythril,0.24.8,Symbolic execution,No vulnerabilities detected in any of the three contracts.
+Echidna,2.3.2,Property fuzzing,"Found 2 real vulnerabilities (queue index corruption, member eviction); both fixed. All 7 invariants now pass at 50,000+ calls."
+Solhint,6.2.1,Linter / SAST-lite,No errors; 114 style and documentation warnings.
+solidity-coverage,toolbox,Dynamic test coverage,"100% statement, function, and line coverage; 98.81% branch coverage (43 tests)."
+SolidityScan,Remix plugin (2026-07-11),SAST (cloud),"No exploitable vulnerabilities; 33 informational findings (style, gas optimization, and 2 false positives)."
