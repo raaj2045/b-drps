@@ -207,4 +207,43 @@ contract Main {
         return reviewedByAE;
     }
 
+    // Bounded reads (SC10). The whole-array getters above grow O(n) and can
+    // exceed RPC response limits at scale; these paginated variants keep every
+    // read bounded by `limit` regardless of queue size.
+    // Queue ids: 0 recievedByEIC, 1 approvedByEIC, 2 recievedByAE,
+    // 3 approvedByAE, 4 recievedByReviewer, 5 reviewedByReviewer,
+    // 6 RreceivedByAE, 7 reviewedByAE.
+    function _queueById(uint8 id) internal view returns (PaperStruct[] storage) {
+        if (id == 0) return recievedByEIC;
+        if (id == 1) return approvedByEIC;
+        if (id == 2) return recievedByAE;
+        if (id == 3) return approvedByAE;
+        if (id == 4) return recievedByReviewer;
+        if (id == 5) return reviewedByReviewer;
+        if (id == 6) return RreceivedByAE;
+        if (id == 7) return reviewedByAE;
+        revert("Unknown queue id");
+    }
+
+    /// @notice Number of papers in queue `id` (ids documented at _queueById).
+    function queueLength(uint8 id) public view returns (uint256) {
+        return _queueById(id).length;
+    }
+
+    /// @notice Up to `limit` papers from queue `id`, starting at `offset`.
+    ///         Returns an empty array when `offset` is past the end.
+    function queuePage(uint8 id, uint256 offset, uint256 limit)
+        public view returns (PaperStruct[] memory page)
+    {
+        PaperStruct[] storage arr = _queueById(id);
+        uint256 len = arr.length;
+        if (offset >= len) return page;
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+        page = new PaperStruct[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = arr[i];
+        }
+    }
+
 }

@@ -88,4 +88,34 @@ contract Decision {
        return ReturnAuthor;
    }
 
+    // Bounded reads (SC10), mirroring Main. Queue ids: 0 RreceivedByEIC,
+    // 1 Publishpaper, 2 ReturnAuthor.
+    function _queueById(uint8 id) internal view returns (PaperStruct[] storage) {
+        if (id == 0) return RreceivedByEIC;
+        if (id == 1) return Publishpaper;
+        if (id == 2) return ReturnAuthor;
+        revert("Unknown queue id");
+    }
+
+    /// @notice Number of papers in queue `id` (ids documented at _queueById).
+    function queueLength(uint8 id) public view returns (uint256) {
+        return _queueById(id).length;
+    }
+
+    /// @notice Up to `limit` papers from queue `id`, starting at `offset`.
+    ///         Returns an empty array when `offset` is past the end.
+    function queuePage(uint8 id, uint256 offset, uint256 limit)
+        public view returns (PaperStruct[] memory page)
+    {
+        PaperStruct[] storage arr = _queueById(id);
+        uint256 len = arr.length;
+        if (offset >= len) return page;
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+        page = new PaperStruct[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = arr[i];
+        }
+    }
+
 }
