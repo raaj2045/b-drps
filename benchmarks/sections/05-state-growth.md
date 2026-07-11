@@ -11,5 +11,4 @@ For each K, the relevant data structure is pre-seeded with K entries (distinct s
 | 1000 | 303,922 | 335,027 | 73,448 | 224,812 | 425,780 |
 | 5000 | 303,922 | 335,027 | 73,448 | 224,812 | 425,780 |
 
-![State-growth flatness](./figures/state_growth.png)
 Raw data: [state_growth.csv](./state_growth.csv)

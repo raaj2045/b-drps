@@ -88,8 +88,7 @@ function renderSection(data) {
   lines.push(`- Blocks consumed: ${e.blocksConsumed}`);
   lines.push(`- Wall-clock: ${e.wallClockMs} ms`);
   lines.push(`- Local TPS (instant-mine, no block-time floor): ${e.localTps}`);
-  lines.push("\n![Analytical TPS by operation](./figures/throughput.png)");
-  lines.push("Raw data: [throughput.csv](./throughput.csv)");
+  lines.push("\nRaw data: [throughput.csv](./throughput.csv)");
   return lines.join("\n");
 }
 

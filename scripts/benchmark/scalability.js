@@ -61,8 +61,7 @@ function renderSection(data) {
       `${fmtGas(r.wallClockMs)} | ${r.meanMsPerPaper} |`
     );
   }
-  lines.push("\n![Pipeline scalability vs N](./figures/scalability.png)");
-  lines.push("Raw data: [scalability.csv](./scalability.csv)");
+  lines.push("\nRaw data: [scalability.csv](./scalability.csv)");
   return lines.join("\n");
 }
 

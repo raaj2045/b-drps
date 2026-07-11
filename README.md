@@ -179,6 +179,7 @@ are **local-only** by design:
 | `scalability.csv` | local only | see note below |
 | `state_growth.csv` | local only | see note below |
 | `parallel_scalability.csv` | local only | concurrent-load behaviour of contracts + node, not consensus throughput |
+| `storage_growth.csv` | local only | slot-accounted storage bytes; layout is EVM-deterministic |
 
 `scalability.csv` and `state_growth.csv` are local-only, and this is sound
 cross-network. Their reported metrics (`totalGas`, `meanGasPerPaper`, the

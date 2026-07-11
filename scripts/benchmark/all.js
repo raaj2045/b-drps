@@ -19,15 +19,16 @@ const throughput = require("./throughput");
 const scalability = require("./scalability");
 const stateGrowth = require("./state-growth");
 const parallel = require("./parallel");
+const storageGrowth = require("./storage-growth");
 
 function reportHeader() {
   const label = networkLabel();
   const authoritative =
     "Sections 1 and 3 and the lifecycle are **dual-network** (`local` + " +
     "`sepoliaFork` row-blocks); their per-operation gas tables are " +
-    "byte-for-byte identical across networks (Section 1, and " +
-    "`figures/gas_network_compare.png`), so the local measurements equal the " +
-    "real-Sepolia-state ones. Sections 2 and 4–6 are **local-only by design** — see " +
+    "byte-for-byte identical across networks (Section 1), so the local " +
+    "measurements equal the " +
+    "real-Sepolia-state ones. Sections 2 and 4–7 are **local-only by design** — see " +
     "the note in each. Tables are network-independent wherever gas-derived; " +
     "wall-clock columns reflect local execution and are not cross-network " +
     `meaningful. (This pass ran on \`${label}\`.)`;
@@ -50,7 +51,7 @@ function reportHeader() {
     authoritative,
     "",
     "Every CSV in this directory carries a `network` column with one row-block " +
-    "per network; the figures (`figures/`) compare them. Sections run " +
+    "per network. Sections run " +
     "independently via `npm run benchmark:<section>`; both networks via " +
     "`npm run benchmark:all-networks`.",
     "",
@@ -80,27 +81,30 @@ async function localOnlySection(name, mod) {
 async function main() {
   console.log(`Network: ${hre.network.name} (label: ${networkLabel()})`);
 
-  console.log("\n[1/6] Gas per operation...");
+  console.log("\n[1/7] Gas per operation...");
   const gasData = await gas.run();
   writeCache("gas", gasData);
   gas.writeGasCsv(gasData);
   gas.writeLifecycleCsv(gasData);
 
-  console.log("\n[2/6] Latency decomposition (composite mainnet-sim model)...");
+  console.log("\n[2/7] Latency decomposition (composite mainnet-sim model)...");
   const latencyMd = await localOnlySection("02-latency", latency);
 
-  console.log("\n[3/6] Throughput (analytical + empirical)...");
+  console.log("\n[3/7] Throughput (analytical + empirical)...");
   const throughputData = await throughput.run();
   throughput.writeCsvFile(throughputData);
 
-  console.log("\n[4/6] Scalability sweep...");
+  console.log("\n[4/7] Scalability sweep...");
   const scalabilityMd = await localOnlySection("04-scalability", scalability);
 
-  console.log("\n[5/6] State-growth scalability...");
+  console.log("\n[5/7] State-growth scalability...");
   const stateGrowthMd = await localOnlySection("05-state-growth", stateGrowth);
 
-  console.log("\n[6/6] Parallel-load scalability...");
+  console.log("\n[6/7] Parallel-load scalability...");
   const parallelMd = await localOnlySection("06-parallel-scalability", parallel);
+
+  console.log("\n[7/7] Storage growth...");
+  const storageGrowthMd = await localOnlySection("07-storage-growth", storageGrowth);
 
   // Concatenate sections in numbered order.
   const body = [
@@ -116,6 +120,8 @@ async function main() {
     stateGrowthMd,
     "",
     parallelMd,
+    "",
+    storageGrowthMd,
     "",
   ].join("\n");
 

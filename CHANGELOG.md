@@ -24,6 +24,12 @@ for the response-to-reviewers letter.
 | sc10-pagination | Bounded paginated getters (Main/Decision/Auth) close OWASP SC10 | **R3** (security analysis acts on its findings), **R4** (DoS surface removed without ABI break) |
 
 ### Changed
+- **Figure set pruned to the two that carry non-tabular information**:
+  `latency_decomposition` (component composition of confirmation latency)
+  and `storage_growth` (linear total vs. flat per-paper trend). The gas
+  parity proof, lifecycle/cost, throughput, scalability, state-growth, and
+  parallel-sweep results are communicated by their CSVs and report tables;
+  their figures were removed along with their plotting code.
 - **Latency benchmark consolidated** (`refactor/consolidate-latency`): the
   original interval-mining latency section (5 samples at a real 12 s block
   interval, mean/min/max only) is removed; the decomposition suite **is**
@@ -55,6 +61,15 @@ for the response-to-reviewers letter.
     *"Fuzz-finding regressions"* suites; coverage 100% stmt/func/line.
 
 ### Added
+- **Section 7 — storage growth (`feat/storage-growth`).** On-chain storage
+  footprint vs. N papers: slot-by-slot accounting of actual state (walked via
+  the new paginated getters) under Solidity storage-layout rules, validated
+  **exactly** against a `debug_traceTransaction` net-SSTORE count (123 = 123
+  slots for one lifecycle). Key finding: the pipeline retains **6 copies of
+  every published paper** (4 Main archives + 2 Decision arrays), ≈3.1 KiB per
+  paper. Outputs: `benchmarks/storage_growth.csv`,
+  `figures/storage_growth.*`. Cost figure now uses the cited economics
+  (0.123 gwei, ETH = $1,798).
 - **SC10 closed — paginated getters (`fix/sc10-pagination`).** Additive
   bounded-read API: `queueLength`/`queuePage` on `Main` (8 queues) and
   `Decision` (3 queues), `memberCount`/`memberPage` on `Auth`. Whole-array

@@ -106,7 +106,6 @@ function stats(arr) {
   return {
     meanMs: Math.round(mean),
     p95Ms: Math.round(percentile(sorted, 95)),
-    p99Ms: Math.round(percentile(sorted, 99)),
     minMs: Math.round(sorted[0]),
     maxMs: Math.round(sorted[sorted.length - 1]),
   };
@@ -219,16 +218,15 @@ function renderSection(data) {
     "mainnet/testnet latency.\n"
   );
 
-  lines.push("| Operation | Component | Source | Mean (ms) | P95 (ms) | P99 (ms) | Min (ms) | Max (ms) |");
-  lines.push("|---|---|---|---:|---:|---:|---:|---:|");
+  lines.push("| Operation | Component | Source | Mean (ms) | P95 (ms) | Min (ms) | Max (ms) |");
+  lines.push("|---|---|---|---:|---:|---:|---:|");
   for (const r of data) {
     for (const [comp, s] of Object.entries(r.components)) {
       const opCell = comp === "execution" ? `**${r.op}**` : "";
       lines.push(
         `| ${opCell} | ${comp} | ${COMPONENT_SOURCE[comp]} | ` +
         `${s.meanMs.toLocaleString("en-US")} | ${s.p95Ms.toLocaleString("en-US")} | ` +
-        `${s.p99Ms.toLocaleString("en-US")} | ${s.minMs.toLocaleString("en-US")} | ` +
-        `${s.maxMs.toLocaleString("en-US")} |`
+        `${s.minMs.toLocaleString("en-US")} | ${s.maxMs.toLocaleString("en-US")} |`
       );
     }
   }
@@ -239,12 +237,12 @@ function renderSection(data) {
 }
 
 function writeCsvFile(data) {
-  const rows = [`network,operation,component,meanMs,p95Ms,p99Ms,minMs,maxMs`];
+  const rows = [`network,operation,component,meanMs,p95Ms,minMs,maxMs`];
   for (const r of data) {
     for (const [comp, s] of Object.entries(r.components)) {
       rows.push(
         `${NETWORK_LABEL},${r.op},${comp},` +
-        `${s.meanMs},${s.p95Ms},${s.p99Ms},${s.minMs},${s.maxMs}`
+        `${s.meanMs},${s.p95Ms},${s.minMs},${s.maxMs}`
       );
     }
   }
