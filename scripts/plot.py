@@ -28,10 +28,10 @@ DATA_DIR = ROOT / "benchmarks"
 FIG_DIR = DATA_DIR / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-# Cost-model parameters for the USD figure. EDIT THESE to match the gas-price
-# and ETH-price assumptions you cite in the paper. Defaults are placeholders.
-GAS_PRICES_GWEI = [10, 30, 50]
-ETH_PRICE_USD = 3000.0
+# Cost-model parameters for the USD figure -- the assumptions cited in the
+# paper (owner-provided, 2026-07-11).
+GAS_PRICE_GWEI = 0.123
+ETH_PRICE_USD = 1798.0
 
 # Paper-friendly defaults: muted palette, readable fonts, light grid.
 plt.rcParams.update({
@@ -172,31 +172,34 @@ def plot_lifecycle():
 
 
 def plot_cost():
+    """Per-step and total USD cost of publishing one paper at the cited
+    gas price and ETH price."""
     path = DATA_DIR / "lifecycle.csv"
     if not path.exists():
         print(f"  (skip cost: {path.name} not found)")
         return
-    rows = _authoritative(_read_csv(path))
-    total_gas = sum(int(r["gas"]) for r in rows)
+    rows = sorted(_authoritative(_read_csv(path)), key=lambda r: int(r["step"]))
+    labels = [r["label"] for r in rows]
+    gas = [int(r["gas"]) for r in rows]
 
-    # cost_usd = gas * gasPrice(gwei) * 1e9 wei/gwei / 1e18 wei/ETH * ETH_USD
-    def cost(gas, gwei):
-        return gas * gwei * 1e9 / 1e18 * ETH_PRICE_USD
+    def usd(g):
+        return g * GAS_PRICE_GWEI * 1e9 / 1e18 * ETH_PRICE_USD
 
-    scenarios = [f"{g} gwei" for g in GAS_PRICES_GWEI]
-    costs = [cost(total_gas, g) for g in GAS_PRICES_GWEI]
+    costs = [usd(g) for g in gas]
+    total = usd(sum(gas))
 
-    fig, ax = plt.subplots(figsize=(6.5, 4))
-    bars = ax.bar(scenarios, costs, color="#DD8452", edgecolor="black",
-                  linewidth=0.5, width=0.55)
-    ax.set_ylabel("USD to publish one paper")
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    bars = ax.bar(range(len(labels)), costs, color="#DD8452",
+                  edgecolor="black", linewidth=0.5, width=0.6)
+    for i, c in enumerate(costs):
+        ax.text(i, c, f"${c:,.4f}", ha="center", va="bottom", fontsize=8)
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=9)
+    ax.set_ylabel("USD per step")
     ax.set_title(
-        f"End-to-end publishing cost\n"
-        f"({total_gas/1e6:.2f}M gas/paper @ ETH=${ETH_PRICE_USD:,.0f})"
+        f"Cost to publish one paper: ${total:,.2f} end-to-end\n"
+        f"(@ {GAS_PRICE_GWEI} gwei, ETH = ${ETH_PRICE_USD:,.0f})"
     )
-    for bar, c in zip(bars, costs):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                f"${c:,.2f}", ha="center", va="bottom", fontsize=10)
     _save(fig, "cost")
 
 
@@ -282,6 +285,36 @@ def plot_gas_network_compare():
             )
     ax.legend(frameon=False, loc="upper left")
     _save(fig, "gas_network_compare")
+
+
+def plot_storage_growth():
+    """On-chain storage footprint vs. N papers: total bytes (linear growth)
+    and bytes/paper (flat => constant per-record footprint)."""
+    path = DATA_DIR / "storage_growth.csv"
+    if not path.exists():
+        print(f"  (skip storage-growth: {path.name} not found)")
+        return
+    rows = sorted(_read_csv(path), key=lambda r: int(r["N"]))
+    N = [int(r["N"]) for r in rows]
+    total_kb = [int(r["totalBytes"]) / 1024 for r in rows]
+    per_paper_kb = [int(r["bytesPerPaper"]) / 1024 for r in rows]
+
+    fig, ax1 = plt.subplots(figsize=(7, 4))
+    ax1.plot(N, total_kb, "o-", color="#4C72B0", label="Total storage")
+    ax1.set_xlabel("N (papers published)")
+    ax1.set_ylabel("Total storage (KiB)", color="#4C72B0")
+    ax1.tick_params(axis="y", labelcolor="#4C72B0")
+
+    ax2 = ax1.twinx()
+    ax2.plot(N, per_paper_kb, "s--", color="#55A868", label="Per paper")
+    ax2.set_ylabel("Storage per paper (KiB)", color="#55A868")
+    ax2.tick_params(axis="y", labelcolor="#55A868")
+    ax2.set_ylim(0, max(per_paper_kb) * 1.4)
+    ax2.grid(False)
+    ax2.spines["top"].set_visible(False)
+
+    ax1.set_title("On-chain storage growth (slot-accounted, trace-validated)")
+    _save(fig, "storage_growth")
 
 
 def plot_latency_decomposition():
@@ -403,6 +436,7 @@ def main():
     plot_throughput()
     plot_scalability()
     plot_state_growth()
+    plot_storage_growth()
     plot_parallel()
     print(f"figures in {FIG_DIR.relative_to(ROOT)}/")
 
