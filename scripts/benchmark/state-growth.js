@@ -108,8 +108,7 @@ function renderSection(data) {
       `${fmtGas(r.gasDeny)} | ${fmtGas(r.gasSend)} | ${fmtGas(r.gasEicApprove)} |`
     );
   }
-  lines.push("\n![State-growth flatness](./figures/state_growth.png)");
-  lines.push("Raw data: [state_growth.csv](./state_growth.csv)");
+  lines.push("\nRaw data: [state_growth.csv](./state_growth.csv)");
   return lines.join("\n");
 }
 

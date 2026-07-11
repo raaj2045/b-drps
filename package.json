@@ -34,6 +34,7 @@
     "benchmark:scalability": "hardhat run scripts/benchmark/scalability.js",
     "benchmark:parallel": "hardhat run scripts/benchmark/parallel.js",
     "benchmark:state-growth": "hardhat run scripts/benchmark/state-growth.js",
+    "benchmark:storage-growth": "hardhat run scripts/benchmark/storage-growth.js",
     "benchmark:plot": "python3 scripts/plot.py",
     "security:lint": "solhint 'contracts/**/*.sol'",
     "security:slither": "slither . --exclude-dependencies",

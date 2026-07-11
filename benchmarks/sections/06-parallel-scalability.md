@@ -9,26 +9,25 @@ N distinct clients fire transactions concurrently (`Promise.all`), for N = 10 �
 
 | N | Phase | Wall-clock (ms) | TPS | Mean tx (ms) | P95 tx (ms) | Max tx (ms) | Success | Queue intact |
 |---:|---|---:|---:|---:|---:|---:|---:|---|
-| 10 | registration | 16 | 625 | 15 | 16 | 16 | 10/10 | — |
-| 10 | submission | 28 | 35.71 | 28 | 28 | 28 | 1/10 | ✅ |
-| 20 | registration | 24 | 833.33 | 23 | 24 | 24 | 20/20 | — |
-| 20 | submission | 39 | 25.64 | 39 | 39 | 39 | 1/20 | ✅ |
-| 30 | registration | 44 | 681.82 | 43 | 44 | 44 | 30/30 | — |
-| 30 | submission | 63 | 15.87 | 63 | 63 | 63 | 1/30 | ✅ |
-| 40 | registration | 57 | 701.75 | 54 | 57 | 57 | 40/40 | — |
-| 40 | submission | 88 | 11.36 | 87 | 87 | 87 | 1/40 | ✅ |
-| 50 | registration | 65 | 769.23 | 63 | 65 | 65 | 50/50 | — |
-| 50 | submission | 98 | 10.2 | 98 | 98 | 98 | 1/50 | ✅ |
-| 60 | registration | 70 | 857.14 | 64 | 68 | 69 | 60/60 | — |
-| 60 | submission | 121 | 8.26 | 121 | 121 | 121 | 1/60 | ✅ |
-| 70 | registration | 84 | 833.33 | 78 | 82 | 83 | 70/70 | — |
-| 70 | submission | 143 | 6.99 | 143 | 143 | 143 | 1/70 | ✅ |
-| 80 | registration | 90 | 888.89 | 86 | 90 | 90 | 80/80 | — |
-| 80 | submission | 151 | 6.62 | 151 | 151 | 151 | 1/80 | ✅ |
-| 90 | registration | 110 | 818.18 | 104 | 109 | 109 | 90/90 | — |
-| 90 | submission | 192 | 5.21 | 192 | 192 | 192 | 1/90 | ✅ |
-| 100 | registration | 127 | 787.4 | 121 | 126 | 127 | 100/100 | — |
-| 100 | submission | 207 | 4.83 | 207 | 207 | 207 | 1/100 | ✅ |
+| 10 | registration | 20 | 500 | 19 | 20 | 20 | 10/10 | — |
+| 10 | submission | 35 | 28.57 | 34 | 34 | 34 | 1/10 | ✅ |
+| 20 | registration | 35 | 571.43 | 33 | 35 | 35 | 20/20 | — |
+| 20 | submission | 54 | 18.52 | 54 | 54 | 54 | 1/20 | ✅ |
+| 30 | registration | 45 | 666.67 | 43 | 44 | 45 | 30/30 | — |
+| 30 | submission | 66 | 15.15 | 66 | 66 | 66 | 1/30 | ✅ |
+| 40 | registration | 79 | 506.33 | 76 | 78 | 78 | 40/40 | — |
+| 40 | submission | 101 | 9.9 | 101 | 101 | 101 | 1/40 | ✅ |
+| 50 | registration | 69 | 724.64 | 67 | 69 | 69 | 50/50 | — |
+| 50 | submission | 115 | 8.7 | 115 | 115 | 115 | 1/50 | ✅ |
+| 60 | registration | 80 | 750 | 75 | 79 | 79 | 60/60 | — |
+| 60 | submission | 137 | 7.3 | 137 | 137 | 137 | 1/60 | ✅ |
+| 70 | registration | 100 | 700 | 96 | 99 | 99 | 70/70 | — |
+| 70 | submission | 168 | 5.95 | 168 | 168 | 168 | 1/70 | ✅ |
+| 80 | registration | 110 | 727.27 | 105 | 108 | 109 | 80/80 | — |
+| 80 | submission | 189 | 5.29 | 189 | 189 | 189 | 1/80 | ✅ |
+| 90 | registration | 129 | 697.67 | 122 | 128 | 128 | 90/90 | — |
+| 90 | submission | 216 | 4.63 | 216 | 216 | 216 | 1/90 | ✅ |
+| 100 | registration | 139 | 719.42 | 132 | 137 | 138 | 100/100 | — |
+| 100 | submission | 253 | 3.95 | 253 | 253 | 253 | 1/100 | ✅ |
 
-![Parallel-load scalability](./figures/parallel_scalability.png)
 Raw data: [parallel_scalability.csv](./parallel_scalability.csv)
