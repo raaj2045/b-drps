@@ -26,6 +26,8 @@ const TOOLS = [
    "0 errors, 114 warnings (all style/documentation)."],
   ["solidity-coverage", "toolbox", "Dynamic test coverage",
    "100% stmt / 100% func / 100% line / 98.81% branch over 43 passing tests."],
+  ["SolidityScan", "Remix plugin (2026-07-11)", "SAST (cloud)",
+   "No new exploitable findings. Free-tier summary: 33 finding titles (severities paywalled) -- 2 false positives (single-arg abi.encodePacked), rest map to known informational classes (NatSpec/style, gas optimization, floating pragma, boolean equality) already reported by Slither/Solhint."],
 ];
 
 const OWASP = [

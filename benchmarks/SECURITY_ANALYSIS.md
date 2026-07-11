@@ -2,8 +2,9 @@
 
 Comprehensive automated security review of the `Auth`, `Main`, and `Decision`
 contracts (Solidity 0.8.19). Combines static analysis (SAST), symbolic
-execution, property fuzzing, linting, and dynamic test coverage, and maps the
-results against the OWASP Smart Contract Top 10 (2025). Run on 2026-05-25.
+execution, property fuzzing, linting, cloud SAST (SolidityScan), and dynamic
+test coverage, and maps the results against the OWASP Smart Contract Top 10
+(2025). Core run 2026-05-25; fuzz re-verification and SolidityScan 2026-07-11.
 
 ## Tool summary
 
@@ -14,6 +15,7 @@ results against the OWASP Smart Contract Top 10 (2025). Run on 2026-05-25.
 | **Echidna** | 2.3.2 | Property fuzzing (dynamic) | User-defined state invariants under randomized multi-transaction call sequences | **2 invariants falsified** (real bugs) — **both fixed** and re-verified: all 7 invariants pass at 50k+ calls. See findings below. |
 | **Solhint** | 6.2.1 | Linter / SAST-lite | Security rules (compiler version, visibility, tx.origin, low-level calls) + style | **0 errors, 114 warnings** — all style/documentation. |
 | **solidity-coverage** | (toolbox) | Dynamic (test coverage) | Statement / branch / function / line coverage of the test suite | **100% stmt, 100% func, 100% line, 98.81% branch** over 43 passing tests (incl. fuzz-finding regressions). |
+| **SolidityScan** | Remix plugin (2026-07-11) | SAST (cloud) | 200+ detectors: known vuln patterns, code quality, gas optimization | **No new exploitable findings** — free-tier summary lists 33 finding titles (severities paywalled); all map to known informational classes or false positives. See breakdown below. |
 
 ### Why symbolic execution found nothing but fuzzing did
 
@@ -41,6 +43,27 @@ path, so any ETH sent would be permanently locked.
 **Resolution:** the payable hook was removed entirely (the workflow handles no
 value). `Auth` now rejects plain ETH transfers, verified by a regression test.
 Re-running Slither reports **0 Medium**.
+
+## SolidityScan (Remix plugin) — free-tier summary, 2026-07-11
+
+Run via the SolidityScan plugin in Remix on all three contracts. **Scope
+caveat:** the free tier reports finding *titles only* — per-finding severity,
+location, and count are behind a paywall, so this section triages the titles
+against the codebase rather than citing the full report.
+
+**Verdict: no new exploitable finding.** The 33 titles break down as:
+
+| Group | Titles (representative) | Assessment |
+|---|---|---|
+| False positive | *Hash collisions with string argument on `abi.encodePacked`* (×2 variants) | The only `abi.encodePacked` use is `keccak256(abi.encodePacked(_role))` (`auth.sol`) on a **single** string argument. Packed-encoding collisions require **two or more** variable-length arguments packed adjacently; a single argument cannot collide. Non-exploitable. |
+| Known + documented | *Use of floating pragma*, *outdated compiler version*, *boolean equality / misuse of boolean constant*, *missing state variable visibility*, *missing underscore in naming* | Same items as Slither's 58 informational / Solhint's 114 warnings (floating `^0.8.7` pragma is pinned to 0.8.19 by the Hardhat config; redundant `== true/false` comparisons; naming). Documented, behaviour-neutral. |
+| Partially applicable | *Missing events*, *missing zero-address validation* | P5 added indexed events to every state-changing action; remaining hits are view/internal paths. Zero-address: the request path enforces `msg.sender == _userAddress` (never zero); only the JOURNAL direct-add path could store a zero address — a trusted-role input-hygiene item, noted under SC04. |
+| NatSpec style | *Missing `@author`/`@dev`/`@notice`/`@inheritdoc`* (×9 variants) | P7 added `@notice` (+ `@param`/`@return` where non-obvious) deliberately; exhaustive tag coverage was judged noise. Style-only. |
+| Gas optimization | *Struct assignment, storage caching, require-string length, constructor payable, packing,* etc. (×12) | Optimizer is intentionally off (EIP-170 / measurement reproducibility, SECURITY.md §4.6); gas costs are reported as measured. No security impact. |
+
+The scan corroborates the Slither/Solhint picture — code-quality and
+gas-efficiency findings, no High/Critical vulnerability class the other five
+tools missed.
 
 ## Findings from property fuzzing (Echidna) — found, then fixed
 
