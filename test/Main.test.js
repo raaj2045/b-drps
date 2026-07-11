@@ -202,6 +202,145 @@ describe("Main", function () {
     });
   });
 
+  describe("Fuzz-finding regressions (Echidna: EIC queue index corruption)", function () {
+    async function registerSecondAuthor(fx) {
+      const { auth, ae, other } = fx;
+      await auth
+        .connect(other)
+        .addOrRequestMember("Author2", "AUTHOR", "au2@x.com", other.address, true);
+      await auth.connect(ae).approoveRequest(other.address, ae.address);
+      return other;
+    }
+
+    it("the same author cannot queue twice in the EiC queue (pre-fix: index map corruption in 2 calls)", async function () {
+      const { main, author } = await loadFixture(deployAllRegistered);
+      await submitPaper(main, { author });
+
+      // Pre-fix: the second push made indexFromEIC[author] point at slot 1
+      // while slot 0 held the same author — the exact Echidna counterexample.
+      await expect(main.connect(author).sendToEIC()).to.be.revertedWith(
+        "Author already queued here"
+      );
+      expect((await main.getRecievedByEIC()).length).to.equal(1);
+    });
+
+    it("acting on a paper that is not in the queue reverts instead of evicting slot 0", async function () {
+      const fx = await loadFixture(deployAllRegistered);
+      const { main, author, eic } = fx;
+      const author2 = await registerSecondAuthor(fx);
+
+      // author's paper occupies slot 0 of the EiC queue.
+      await submitPaper(main, { author });
+      // author2 stages but never submits; the staged struct now points at
+      // author2, who has no queued paper.
+      await main
+        .connect(author2)
+        .getPaperInfo("Author2", "au2@x.com", "abs2", "T2", "ipfs://y", author2.address);
+
+      // Pre-fix: indexFromEIC[author2] defaulted to 0, so this evicted
+      // author's paper. Now it reverts and the queue is untouched.
+      await expect(main.connect(eic).EICapproval(true)).to.be.revertedWith(
+        "Paper not in this queue"
+      );
+      const queue = await main.getRecievedByEIC();
+      expect(queue.length).to.equal(1);
+      expect(queue[0].authorAddress).to.equal(author.address);
+    });
+
+    it("two authors' papers interleave through the EiC queue with consistent removal", async function () {
+      const fx = await loadFixture(deployAllRegistered);
+      const { main, author, eic } = fx;
+      const author2 = await registerSecondAuthor(fx);
+
+      await submitPaper(main, { author, title: "Paper A" });
+      await main
+        .connect(author2)
+        .getPaperInfo("Author2", "au2@x.com", "abs2", "Paper B", "ipfs://y", author2.address);
+      await main.connect(author2).sendToEIC();
+      expect((await main.getRecievedByEIC()).length).to.equal(2);
+
+      // Staged struct currently holds author2's paper: EiC decision applies to
+      // it (the staged-struct data model, SECURITY.md §4.1) and must remove
+      // exactly that paper, leaving author's intact.
+      await main.connect(eic).EICapproval(true);
+      const queue = await main.getRecievedByEIC();
+      expect(queue.length).to.equal(1);
+      expect(queue[0].papertitle).to.equal("Paper A");
+      expect(queue[0].authorAddress).to.equal(author.address);
+
+      const aeQueue = await main.getRecievedByAE();
+      expect(aeQueue.length).to.equal(1);
+      expect(aeQueue[0].papertitle).to.equal("Paper B");
+    });
+
+    it("removing a non-last queue entry swaps the tail into its slot and fixes the map", async function () {
+      const fx = await loadFixture(deployAllRegistered);
+      const { main, author, eic } = fx;
+      const author2 = await registerSecondAuthor(fx);
+
+      // author at slot 0, author2 at slot 1.
+      await submitPaper(main, { author, title: "Paper A" });
+      await main
+        .connect(author2)
+        .getPaperInfo("Author2", "au2@x.com", "abs2", "Paper B", "ipfs://y", author2.address);
+      await main.connect(author2).sendToEIC();
+
+      // Re-stage author's paper so the EiC decision applies to slot 0 (the
+      // non-last element), exercising the _dequeue swap branch.
+      await main
+        .connect(author)
+        .getPaperInfo("Author", "au@x.com", "An abstract.", "Paper A", "ipfs://x", author.address);
+      await main.connect(eic).EICapproval(false);
+
+      // author2's paper must have moved into slot 0 with its map entry fixed,
+      // and must still be removable (map points at the right slot).
+      const queue = await main.getRecievedByEIC();
+      expect(queue.length).to.equal(1);
+      expect(queue[0].papertitle).to.equal("Paper B");
+
+      await main
+        .connect(author2)
+        .getPaperInfo("Author2", "au2@x.com", "abs2", "Paper B", "ipfs://y", author2.address);
+      await main.connect(eic).EICapproval(false);
+      expect((await main.getRecievedByEIC()).length).to.equal(0);
+    });
+
+    it("downstream queues track their own index maps (pre-fix: always swap-popped slot 0)", async function () {
+      const fx = await loadFixture(deployAllRegistered);
+      const { main, author, eic, ae, reviewer } = fx;
+      const author2 = await registerSecondAuthor(fx);
+
+      // Drive author2's paper into the reviewer-returned (RreceivedByAE) queue.
+      await main
+        .connect(author2)
+        .getPaperInfo("Author2", "au2@x.com", "abs2", "Paper B", "ipfs://y", author2.address);
+      await main.connect(author2).sendToEIC();
+      await main.connect(eic).EICapproval(true);
+      await main.connect(ae).AEapproval(true);
+      await main.connect(reviewer).Reviewerapproval(true, "r2", reviewer.address);
+
+      // Now drive author's paper into the same queue behind it.
+      await submitPaper(main, { author, title: "Paper A" });
+      await main.connect(eic).EICapproval(true);
+      await main.connect(ae).AEapproval(true);
+      await main.connect(reviewer).Reviewerapproval(true, "r1", reviewer.address);
+
+      expect((await main.RereceivedByAE()).length).to.equal(2);
+
+      // AE finalizes the staged paper (author's, slot 1). Pre-fix the
+      // indexFromRBAE map was never written, so this always removed slot 0
+      // (author2's paper) regardless of which paper was being finalized.
+      await main.connect(ae).ReviewedByAE(true, "final remarks A");
+      const remaining = await main.RereceivedByAE();
+      expect(remaining.length).to.equal(1);
+      expect(remaining[0].authorAddress).to.equal(author2.address);
+
+      const finalized = await main.getReviewedByAE();
+      expect(finalized.length).to.equal(1);
+      expect(finalized[0].papertitle).to.equal("Paper A");
+    });
+  });
+
   // SKIP: deferred data-model limitations (SECURITY.md §4.1–§4.3). Fixing them
   // changes the ABI; un-skipping is the acceptance criterion for a future fix.
   describe.skip("[P5: deferred data-model limitations — see SECURITY.md]", function () {

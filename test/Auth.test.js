@@ -111,13 +111,11 @@ describe("Auth", function () {
       await auth.connect(journal).addOrRequestMember("J", "JOURNAL", "j@x.com", journal.address, true);
       await auth.connect(eic).addOrRequestMember("E", "EIC", "e@x.com", eic.address, true);
       await auth.connect(journal).approoveRequest(eic.address, journal.address);
-      // Second approve attempt: addOrRequestMember(..., false) hits the
-      // memberExist guard. (Note: memberRequested[eic] is never cleared on
-      // approval -- a state-cleanliness quirk -- so the earlier "You need to
-      // Request First" guard does not fire.)
+      // Second approve attempt: approval now clears the request state, so the
+      // pending-request guard fires first.
       await expect(
         auth.connect(journal).approoveRequest(eic.address, journal.address)
-      ).to.be.revertedWith("Member Exist Already!!");
+      ).to.be.revertedWith("No pending request for this address");
     });
 
     it("reverts when approver has higher power (lower number) than requester is asking for", async function () {
@@ -162,6 +160,36 @@ describe("Auth", function () {
           .connect(stranger)
           .addOrRequestMember("X", "REVIEWER", "x@x.com", stranger.address, false)
       ).to.be.revertedWith("You need to Request First");
+    });
+  });
+
+  describe("Fuzz-finding regressions (Echidna: member eviction)", function () {
+    it("denyRequest for a never-requested address reverts instead of evicting slot 0", async function () {
+      const { auth, journal, eic, stranger } = await loadFixture(deployAll);
+      await auth.connect(journal).addOrRequestMember("J", "JOURNAL", "j@x.com", journal.address, true);
+      // eic's request occupies slot 0 of the request array.
+      await auth.connect(eic).addOrRequestMember("E", "EIC", "e@x.com", eic.address, true);
+
+      // Pre-fix: indexFromRequest[stranger] defaulted to 0, so this call
+      // swap-popped eic's pending request out of the array.
+      await expect(
+        auth.connect(journal).denyRequest(stranger.address)
+      ).to.be.revertedWith("No pending request for this address");
+
+      const pending = await auth.getApprovedOrRequestedMember(true);
+      expect(pending.length).to.equal(1);
+      expect(pending[0].userAddress).to.equal(eic.address);
+    });
+
+    it("a denied requester can request again", async function () {
+      const { auth, eic } = await loadFixture(deployAll);
+      await auth.connect(eic).addOrRequestMember("E", "EIC", "e@x.com", eic.address, true);
+      await auth.connect(eic).denyRequest(eic.address); // withdraw own request
+
+      // Pre-fix: memberRequested stayed true after deny, blocking re-request.
+      await auth.connect(eic).addOrRequestMember("E", "EIC", "e@x.com", eic.address, true);
+      const pending = await auth.getApprovedOrRequestedMember(true);
+      expect(pending.length).to.equal(1);
     });
   });
 
