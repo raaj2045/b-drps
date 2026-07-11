@@ -15,7 +15,6 @@ const SEPOLIA_BLOCK_GAS_LIMIT = 30_000_000;
 const SEPOLIA_BLOCK_TIME_S = 12.242;
 
 const SCALABILITY_NS = [1, 10, 50, 100, 500];
-const LATENCY_SAMPLES = 5;
 const STATE_GROWTH_KS = [10, 100, 1000, 5000];
 
 function fmtGas(n) {
@@ -226,7 +225,7 @@ function readCache(name) {
 module.exports = {
   OUT_DIR, SECTIONS_DIR, CACHE_DIR,
   SEPOLIA_BLOCK_GAS_LIMIT, SEPOLIA_BLOCK_TIME_S,
-  SCALABILITY_NS, LATENCY_SAMPLES, STATE_GROWTH_KS,
+  SCALABILITY_NS, STATE_GROWTH_KS,
   fmtGas, networkLabel, isAppend, getReceipt, setMining, syntheticAddress,
   deployAll, registerRolesWithGas, runPipelineOnce,
   writeSection, writeCsv, writeNetworkCsv, writeCache, readCache,

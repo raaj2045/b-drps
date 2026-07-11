@@ -1,5 +1,5 @@
 /*
- * Section 7: parallel-load scalability. For N = 10, 20, ..., 100 concurrent
+ * Section 6: parallel-load scalability. For N = 10, 20, ..., 100 concurrent
  * clients, fire N transactions in parallel (Promise.all, one distinct signer
  * each) and record wall-clock, achieved throughput, per-transaction latency
  * percentiles, and success rate. Two phases per N:
@@ -114,7 +114,7 @@ async function run() {
 }
 
 function renderSection(data) {
-  const lines = ["## 7. Parallel-load scalability\n"];
+  const lines = ["## 6. Parallel-load scalability\n"];
   lines.push(
     "N distinct clients fire transactions concurrently (`Promise.all`), for " +
     "N = 10 … 100.\n"
@@ -170,7 +170,7 @@ async function main() {
   console.log("[parallel] running...");
   const data = await run();
   writeCsvFile(data);
-  writeSection("07-parallel-scalability", renderSection(data));
+  writeSection("06-parallel-scalability", renderSection(data));
   console.log("[parallel] done");
 }
 

@@ -30,7 +30,6 @@
     "benchmark:all-networks": "npm run benchmark && npm run benchmark:fork",
     "benchmark:gas": "hardhat run scripts/benchmark/gas.js",
     "benchmark:latency": "hardhat run scripts/benchmark/latency.js",
-    "benchmark:latency-v2": "hardhat run scripts/benchmark/latency-v2.js",
     "benchmark:throughput": "hardhat run scripts/benchmark/throughput.js",
     "benchmark:scalability": "hardhat run scripts/benchmark/scalability.js",
     "benchmark:parallel": "hardhat run scripts/benchmark/parallel.js",

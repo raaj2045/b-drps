@@ -22,6 +22,15 @@ for the response-to-reviewers letter.
 | fuzz-fix | Fix both Echidna findings (queue index corruption, member eviction) | **R3** (security analysis acts on its findings), **R4** (fuzz-verified state-machine integrity) |
 | paper-artifacts | Latency decomposition (N=10/25/50), parallel-load sweep (10–100), security CSVs, figures | **R3** (latency/scalability depth, percentile statistics), **R4** (variance reporting, honest simulation labelling) |
 
+### Changed
+- **Latency benchmark consolidated** (`refactor/consolidate-latency`): the
+  original interval-mining latency section (5 samples at a real 12 s block
+  interval, mean/min/max only) is removed; the decomposition suite **is**
+  Section 2 and owns `latency.csv` / `benchmark:latency`. One latency
+  artifact, no v1/v2 split. `latency.csv` is now local-only (its simulated
+  components are network-independent by construction), leaving `gas.csv`,
+  `throughput.csv`, and `lifecycle.csv` as the dual-network CSVs.
+
 ### Fixed
 - **Fuzz findings — queue index corruption and member eviction
   (`fix/fuzz-findings`).** Both defects surfaced by Echidna property fuzzing
@@ -47,15 +56,15 @@ for the response-to-reviewers letter.
 ### Added
 - **Paper artifacts — latency decomposition, parallel-load sweep, security
   CSVs (`feat/paper-artifacts`).**
-  - *Section 6 — latency decomposition* (`scripts/benchmark/latency-v2.js`):
+  - *Section 2 — latency decomposition* (`scripts/benchmark/latency.js`):
     per-operation confirmation latency at N = 10/25/50 samples with
     Mean/P95/P99/Min/Max, decomposed into **measured** EVM execution plus
     **simulated** (`mainnet-sim`, seeded RNG) propagation — Gaussian(150 ms,
     σ 40) + Exponential(50 ms) queueing + 10% Pareto(50, α 3) congestion
     spikes — and Gaussian(12 s, σ 2 s) block inclusion. Output:
-    `benchmarks/latency_v2.csv`, `figures/latency_decomposition.*`,
-    `figures/latency_v2_by_n.*`.
-  - *Section 7 — parallel-load scalability* (`scripts/benchmark/parallel.js`):
+    `benchmarks/latency.csv`, `figures/latency_decomposition.*`,
+    `figures/latency_by_n.*`.
+  - *Section 6 — parallel-load scalability* (`scripts/benchmark/parallel.js`):
     N = 10…100 concurrent clients; registration phase (parallel-safe
     throughput curve) and submission phase, which demonstrates that the
     shared-staging model (SECURITY.md §4.1) serializes concurrent submissions
@@ -65,9 +74,9 @@ for the response-to-reviewers letter.
   - *Security CSVs* (`npm run security:csv`): `security_tools.csv`,
     `security_owasp.csv`, `security_echidna.csv` — structured transcriptions
     of `benchmarks/SECURITY_ANALYSIS.md` for direct use as paper tables.
-  - `npm run benchmark` now runs sections 1–7; the fork pass reuses the
-    wall-clock-bound sections (4–7) from the local run. Hardhat local network
-    account count raised to 130 (first 20 addresses unchanged).
+  - `npm run benchmark` runs sections 1–6; the fork pass reuses the
+    wall-clock-bound sections (2, 4–6) from the local run. Hardhat local
+    network account count raised to 130 (first 20 addresses unchanged).
 - **P7 — Repository hygiene.** Concise NatSpec (`@notice`, plus `@param`/`@return`
   where non-obvious) on every public/external function in `Auth`, `Main`, and
   `Decision`; SPDX headers in all `.sol` files corrected to

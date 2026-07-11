@@ -32,7 +32,7 @@ module.exports = {
     hardhat: {
       chainId: 31337,
       // The parallel-scalability sweep (scripts/benchmark/parallel.js) drives
-      // up to 100 concurrent distinct senders, and latency-v2 registers 50
+      // up to 100 concurrent distinct senders, and the latency suite registers 50
       // fresh members per pass. Default is 20; the first 20 addresses are
       // unchanged (same mnemonic, longer derivation range).
       accounts: { count: 130 },

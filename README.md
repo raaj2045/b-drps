@@ -166,18 +166,19 @@ npm run benchmark:plot       # regenerate figures/ from the CSVs (no chain neede
 
 ### Benchmark network coverage
 
-The benchmark CSVs in `benchmarks/` carry a leading `network` column. Four are
-**dual-network** (a `local` row-block and a `sepoliaFork` row-block); two are
-**local-only** by design:
+The benchmark CSVs in `benchmarks/` carry a leading `network` column. Three are
+**dual-network** (a `local` row-block and a `sepoliaFork` row-block); the rest
+are **local-only** by design:
 
 | CSV | Networks | Why |
 |---|---|---|
 | `gas.csv` | local + sepoliaFork | per-op gas, the parity proof |
-| `latency.csv` | local + sepoliaFork | block-cadence latency |
 | `throughput.csv` | local + sepoliaFork | analytical TPS ceiling |
 | `lifecycle.csv` | local + sepoliaFork | end-to-end gas waterfall |
+| `latency.csv` | local only | measured execution + simulated (`mainnet-sim`) propagation/inclusion — network-independent by construction |
 | `scalability.csv` | local only | see note below |
 | `state_growth.csv` | local only | see note below |
+| `parallel_scalability.csv` | local only | concurrent-load behaviour of contracts + node, not consensus throughput |
 
 `scalability.csv` and `state_growth.csv` are local-only, and this is sound
 cross-network. Their reported metrics (`totalGas`, `meanGasPerPaper`, the

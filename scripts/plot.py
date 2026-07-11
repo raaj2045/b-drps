@@ -1,11 +1,10 @@
 """
 Render comparison graphs from the benchmark CSVs.
 
-Inputs  (read from benchmarks/):  latency.csv, throughput.csv,
-                                  scalability.csv, state_growth.csv
-Outputs (written to benchmarks/figures/):
-                                  latency.png, throughput.png,
-                                  scalability.png, state_growth.png
+Inputs  (read from benchmarks/):  gas.csv, lifecycle.csv, latency.csv,
+                                  throughput.csv, scalability.csv,
+                                  state_growth.csv, parallel_scalability.csv
+Outputs (written to benchmarks/figures/): one png+pdf per figure
 
 Each figure is also written as .pdf for vector embedding in LaTeX.
 Run:  python3 scripts/plot.py   (or `npm run benchmark:plot`)
@@ -75,33 +74,6 @@ def _save(fig, name):
         fig.savefig(out)
         print(f"  -> {out.relative_to(ROOT)}")
     plt.close(fig)
-
-
-def plot_latency():
-    path = DATA_DIR / "latency.csv"
-    if not path.exists():
-        print(f"  (skip latency: {path.name} not found)")
-        return
-    rows = _authoritative(_read_csv(path))
-    ops = [r["operation"] for r in rows]
-    means = [int(r["meanMs"]) for r in rows]
-    mins = [int(r["minMs"]) for r in rows]
-    maxs = [int(r["maxMs"]) for r in rows]
-    # Asymmetric error bars: (mean - min, max - mean).
-    errs = [[m - lo for m, lo in zip(means, mins)],
-            [hi - m for m, hi in zip(means, maxs)]]
-
-    fig, ax = plt.subplots(figsize=(7, 4))
-    bars = ax.bar(ops, means, yerr=errs, capsize=4, color="#4C72B0",
-                  edgecolor="black", linewidth=0.5)
-    ax.set_ylabel("Latency (ms)")
-    ax.set_title("Per-operation latency under Sepolia-like 12s blocks")
-    ax.tick_params(axis="x", rotation=20)
-    # Annotate each bar with the mean.
-    for bar, m in zip(bars, means):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                f"{m}", ha="center", va="bottom", fontsize=9)
-    _save(fig, "latency")
 
 
 def plot_throughput():
@@ -317,7 +289,7 @@ def plot_latency_decomposition():
     simulated propagation + simulated block inclusion (N=50 pass), with the
     total's P95/P99 marked. Simulated components are hatched and the title
     carries the mainnet-sim label so the figure is honest standalone."""
-    path = DATA_DIR / "latency_v2.csv"
+    path = DATA_DIR / "latency.csv"
     if not path.exists():
         print(f"  (skip latency-decomposition: {path.name} not found)")
         return
@@ -371,12 +343,12 @@ def plot_latency_decomposition():
     _save(fig, "latency_decomposition")
 
 
-def plot_latency_v2_by_n():
+def plot_latency_by_n():
     """Grouped bars of the composite total mean per operation at N=10/25/50,
     with min–P95 whiskers: shows the estimates are stable in sample size."""
-    path = DATA_DIR / "latency_v2.csv"
+    path = DATA_DIR / "latency.csv"
     if not path.exists():
-        print(f"  (skip latency-v2-by-n: {path.name} not found)")
+        print(f"  (skip latency-by-n: {path.name} not found)")
         return
     rows = [r for r in _authoritative(_read_csv(path)) if r["component"] == "total"]
     ns = sorted({int(r["N"]) for r in rows})
@@ -403,7 +375,7 @@ def plot_latency_v2_by_n():
     ax.set_title("Composite total latency is stable across sample sizes\n"
                  "(bars = mean, whiskers = min…P95; mainnet-sim model)")
     ax.legend(frameon=False)
-    _save(fig, "latency_v2_by_n")
+    _save(fig, "latency_by_n")
 
 
 def plot_parallel():
@@ -463,12 +435,11 @@ def main():
     plot_gas_network_compare()
     plot_lifecycle()
     plot_cost()
-    plot_latency()
+    plot_latency_decomposition()
+    plot_latency_by_n()
     plot_throughput()
     plot_scalability()
     plot_state_growth()
-    plot_latency_decomposition()
-    plot_latency_v2_by_n()
     plot_parallel()
     print(f"figures in {FIG_DIR.relative_to(ROOT)}/")
 
