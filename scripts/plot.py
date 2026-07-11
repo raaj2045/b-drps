@@ -165,9 +165,7 @@ def plot_latency_decomposition():
     ax.set_ylabel("Latency (ms)")
     ax.yaxis.set_major_formatter(
         mtick.FuncFormatter(lambda v, _: f"{v/1000:.0f}k"))
-    ax.set_title(
-        f"Confirmation-latency decomposition, {n_samples} transactions/op\n"
-        "(execution measured; propagation + inclusion from the mainnet-sim model)")
+    ax.set_title(f"Transaction confirmation latency ({n_samples} samples per operation)")
     ax.legend(frameon=False, fontsize=8, loc="center left",
               bbox_to_anchor=(1.02, 0.5))
     _save(fig, "latency_decomposition")
