@@ -20,6 +20,38 @@ contract Main {
 
     PaperStruct instanceofPaperStruct;
 
+    // Queue bookkeeping. Each pipeline queue pairs a PaperStruct[] with an
+    // address => index+1 map (0 = not queued), so presence is distinguishable
+    // from slot 0. One paper per author per queue; duplicates and removals of
+    // absent papers revert instead of corrupting the swap-and-pop (found by
+    // Echidna property fuzzing; see SECURITY.md).
+    function _enqueue(
+        PaperStruct[] storage arr,
+        mapping(address => uint256) storage idx,
+        PaperStruct memory p
+    ) internal {
+        require(idx[p.authorAddress] == 0, "Author already queued here");
+        arr.push(p);
+        idx[p.authorAddress] = arr.length; // index + 1
+    }
+
+    function _dequeue(
+        PaperStruct[] storage arr,
+        mapping(address => uint256) storage idx,
+        address author
+    ) internal {
+        uint256 slotPlus1 = idx[author];
+        require(slotPlus1 != 0, "Paper not in this queue");
+        uint256 i = slotPlus1 - 1;
+        uint256 last = arr.length - 1;
+        if (i != last) {
+            arr[i] = arr[last];
+            idx[arr[i].authorAddress] = i + 1;
+        }
+        arr.pop();
+        delete idx[author];
+    }
+
 // Role gating reads power from Auth (EIC=2, AE=3, REVIEWER=4, AUTHOR=5).
     Auth public immutable auth;
 
@@ -69,11 +101,8 @@ contract Main {
 
     /// @notice Submit the staged paper into the EiC queue.
     function sendToEIC() public onlyAuthor {
-
-           recievedByEIC.push(instanceofPaperStruct);
-           indexFromEIC[instanceofPaperStruct.authorAddress] = recievedByEIC.length - 1;
-
-           emit PaperSubmitted(instanceofPaperStruct.authorAddress, instanceofPaperStruct.papertitle);
+        _enqueue(recievedByEIC, indexFromEIC, instanceofPaperStruct);
+        emit PaperSubmitted(instanceofPaperStruct.authorAddress, instanceofPaperStruct.papertitle);
     }
     /// @notice Papers awaiting EiC review.
     function getRecievedByEIC() public view returns(PaperStruct[] memory) {
@@ -83,24 +112,13 @@ contract Main {
     /// @notice EiC accepts or rejects the current paper.
     /// @param _EICapproval true forwards it to the AE queue; false drops it.
     function EICapproval(bool _EICapproval) public onlyEiC {
+        address author = instanceofPaperStruct.authorAddress;
         if (_EICapproval == true) {
-
             approvedByEIC.push(instanceofPaperStruct);
-            recievedByAE.push(instanceofPaperStruct);
-
-            uint256 index = indexFromEIC[instanceofPaperStruct.authorAddress];
-            recievedByEIC[index] = recievedByEIC[recievedByEIC.length - 1];
-            indexFromEIC[recievedByEIC[index].authorAddress] = index;
-            recievedByEIC.pop();
-            delete indexFromEIC[instanceofPaperStruct.authorAddress];
-        } else {
-            uint256 index = indexFromEIC[instanceofPaperStruct.authorAddress];
-            recievedByEIC[index] = recievedByEIC[recievedByEIC.length - 1];
-            indexFromEIC[recievedByEIC[index].authorAddress] = index;
-            recievedByEIC.pop();
-            delete indexFromEIC[instanceofPaperStruct.authorAddress];
+            _enqueue(recievedByAE, indexFromAE, instanceofPaperStruct);
         }
-        emit EICApprovalDecision(msg.sender, _EICapproval, instanceofPaperStruct.authorAddress);
+        _dequeue(recievedByEIC, indexFromEIC, author);
+        emit EICApprovalDecision(msg.sender, _EICapproval, author);
     }
     /// @notice Papers the EiC approved.
      function getApprovedByEIC() public view returns(PaperStruct[] memory)  {
@@ -120,24 +138,13 @@ contract Main {
     /// @notice AE accepts or rejects the current paper.
     /// @param _AEapproval true forwards it to the reviewer queue; false drops it.
     function AEapproval(bool _AEapproval) public onlyAE {
+        address author = instanceofPaperStruct.authorAddress;
         if (_AEapproval == true) {
-
             approvedByAE.push(instanceofPaperStruct);
-            recievedByReviewer.push(instanceofPaperStruct);
-
-            uint256 index = indexFromAE[instanceofPaperStruct.authorAddress];
-            recievedByAE[index] = recievedByAE[recievedByAE.length - 1];
-            indexFromAE[recievedByAE[index].authorAddress] = index;
-            recievedByAE.pop();
-            delete indexFromAE[instanceofPaperStruct.authorAddress];
-        } else {
-            uint256 index = indexFromAE[instanceofPaperStruct.authorAddress];
-            recievedByAE[index] = recievedByAE[recievedByAE.length - 1];
-            indexFromAE[recievedByAE[index].authorAddress] = index;
-            recievedByAE.pop();
-            delete indexFromAE[instanceofPaperStruct.authorAddress];
+            _enqueue(recievedByReviewer, indexFromReviewer, instanceofPaperStruct);
         }
-        emit AEApprovalDecision(msg.sender, _AEapproval, instanceofPaperStruct.authorAddress);
+        _dequeue(recievedByAE, indexFromAE, author);
+        emit AEApprovalDecision(msg.sender, _AEapproval, author);
     }
     /// @notice Papers the AE approved.
      function getApprovedByAE() public view returns(PaperStruct[] memory)  {
@@ -161,15 +168,9 @@ contract Main {
         instanceofPaperStruct.reviewofreviewer = _Review;
         instanceofPaperStruct.reviewerAddress = _reviewerAddress;
         if (_Reviewerapproval == true) {
-
             reviewedByReviewer.push(instanceofPaperStruct);
-            RreceivedByAE.push(instanceofPaperStruct);
-
-            uint256 index = indexFromReviewer[instanceofPaperStruct.authorAddress];
-            recievedByReviewer[index] = recievedByReviewer[recievedByReviewer.length - 1];
-            indexFromReviewer[recievedByReviewer[index].authorAddress] = index;
-            recievedByReviewer.pop();
-            delete indexFromReviewer[instanceofPaperStruct.authorAddress];
+            _enqueue(RreceivedByAE, indexFromRBAE, instanceofPaperStruct);
+            _dequeue(recievedByReviewer, indexFromReviewer, instanceofPaperStruct.authorAddress);
         }
         // false branch is a no-op (deferred limitation, SECURITY.md §4.2).
         emit ReviewerReviewed(msg.sender, _Reviewerapproval, instanceofPaperStruct.authorAddress);
@@ -195,12 +196,7 @@ contract Main {
       if(_AEReview == true)
       { instanceofPaperStruct.reviewofAE = _Review;
         reviewedByAE.push(instanceofPaperStruct);
-
-        uint256 index = indexFromRBAE[instanceofPaperStruct.authorAddress];
-        RreceivedByAE[index] = RreceivedByAE[RreceivedByAE.length - 1];
-        indexFromRBAE[RreceivedByAE[index].authorAddress] = index;
-        RreceivedByAE.pop();
-        delete indexFromRBAE[instanceofPaperStruct.authorAddress];
+        _dequeue(RreceivedByAE, indexFromRBAE, instanceofPaperStruct.authorAddress);
         }
       // false branch is a no-op (deferred limitation, SECURITY.md §4.3).
       emit AEReviewed(msg.sender, _AEReview, instanceofPaperStruct.authorAddress);

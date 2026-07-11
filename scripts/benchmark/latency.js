@@ -45,6 +45,10 @@ async function run() {
     await (await ctx.main.connect(ctx.eic).EICapproval(true)).wait();
     samples.EICapproval.push(Date.now() - t0);
 
+    // Unmeasured drain: EICapproval(true) parked the paper in the AE queue,
+    // and the queue guards reject a second entry for the same author.
+    await (await ctx.main.connect(ctx.ae).AEapproval(false)).wait();
+
     t0 = Date.now();
     await (await ctx.decision.connect(ctx.eic).getPaperInfo(
       `A${i}`, `a${i}@x.com`, "abs", `Title ${i}`, `link${i}`,

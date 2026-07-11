@@ -56,13 +56,15 @@ async function deployAll() {
   const authReceipt = await auth.deploymentTransaction().wait();
   await auth.waitForDeployment();
 
+  // Main and Decision take the Auth address (P5 role gating).
+  const authAddress = await auth.getAddress();
   const Main = await hre.ethers.getContractFactory("Main");
-  const main = await Main.deploy();
+  const main = await Main.deploy(authAddress);
   const mainReceipt = await main.deploymentTransaction().wait();
   await main.waitForDeployment();
 
   const Decision = await hre.ethers.getContractFactory("Decision");
-  const decision = await Decision.deploy();
+  const decision = await Decision.deploy(authAddress);
   const decisionReceipt = await decision.deploymentTransaction().wait();
   await decision.waitForDeployment();
 

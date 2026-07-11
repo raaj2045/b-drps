@@ -149,6 +149,10 @@ contract Auth {
             msg.sender == approvingUserAddress,
             "Caller must be the approving member"
         );
+        require(
+            memberRequested[_userAddress],
+            "No pending request for this address"
+        );
 
         MemberStruct memory memberTobeApproved = getRequestedMemberWithAddress[
             _userAddress
@@ -178,6 +182,8 @@ contract Auth {
         indexFromRequest[arrayOfRequestedMembers[index].userAddress] = index;
         arrayOfRequestedMembers.pop();
         delete indexFromRequest[_userAddress];
+        memberRequested[_userAddress] = false;
+        delete getRequestedMemberWithAddress[_userAddress];
 
         emit MemberApproved(_userAddress, approvingUserAddress, role);
     }
@@ -190,12 +196,22 @@ contract Auth {
             msg.sender == _userAddress || memberExist[msg.sender],
             "Not authorized to deny this request"
         );
+        // Guard the swap-and-pop: indexFromRequest defaults to 0, so denying a
+        // never-requested address evicted whatever member sat in slot 0 of the
+        // request array (found by Echidna property fuzzing; see SECURITY.md).
+        require(
+            memberRequested[_userAddress],
+            "No pending request for this address"
+        );
 
         uint256 index = indexFromRequest[_userAddress];
         arrayOfRequestedMembers[index] = arrayOfRequestedMembers[arrayOfRequestedMembers.length - 1];
         indexFromRequest[arrayOfRequestedMembers[index].userAddress] = index;
         arrayOfRequestedMembers.pop();
         delete indexFromRequest[_userAddress];
+        // Full cleanup so a denied requester can request again.
+        memberRequested[_userAddress] = false;
+        delete getRequestedMemberWithAddress[_userAddress];
 
         emit MemberDenied(_userAddress);
     }

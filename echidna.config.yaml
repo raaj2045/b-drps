@@ -7,5 +7,8 @@ testLimit: 50000
 seqLen: 50
 # Deterministic runs for reproducible paper results.
 seed: 1
+# Fixed sender set; EchidnaMain's MockAuth maps these to the four roles
+# (0x10000 AUTHOR, 0x20000 EIC, 0x30000 AE, 0x40000 REVIEWER).
+sender: ["0x10000", "0x20000", "0x30000", "0x40000"]
 # Quieter output; full corpus not needed for the report.
 corpusDir: benchmarks/echidna-corpus
