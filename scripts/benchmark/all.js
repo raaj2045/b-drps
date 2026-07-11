@@ -18,17 +18,16 @@ const latency = require("./latency");
 const throughput = require("./throughput");
 const scalability = require("./scalability");
 const stateGrowth = require("./state-growth");
-const latencyV2 = require("./latency-v2");
 const parallel = require("./parallel");
 
 function reportHeader() {
   const label = networkLabel();
   const authoritative =
-    "Sections 1–3 and the lifecycle are **dual-network** (`local` + " +
+    "Sections 1 and 3 and the lifecycle are **dual-network** (`local` + " +
     "`sepoliaFork` row-blocks); their per-operation gas tables are " +
     "byte-for-byte identical across networks (Section 1, and " +
     "`figures/gas_network_compare.png`), so the local measurements equal the " +
-    "real-Sepolia-state ones. Sections 4–7 are **local-only by design** — see " +
+    "real-Sepolia-state ones. Sections 2 and 4–6 are **local-only by design** — see " +
     "the note in each. Tables are network-independent wherever gas-derived; " +
     "wall-clock columns reflect local execution and are not cross-network " +
     `meaningful. (This pass ran on \`${label}\`.)`;
@@ -81,46 +80,40 @@ async function localOnlySection(name, mod) {
 async function main() {
   console.log(`Network: ${hre.network.name} (label: ${networkLabel()})`);
 
-  console.log("\n[1/7] Gas per operation...");
+  console.log("\n[1/6] Gas per operation...");
   const gasData = await gas.run();
   writeCache("gas", gasData);
   gas.writeGasCsv(gasData);
   gas.writeLifecycleCsv(gasData);
 
-  console.log("\n[2/7] Latency under Sepolia-like 12s blocks (slow)...");
-  const latencyData = await latency.run();
-  latency.writeCsvFile(latencyData);
+  console.log("\n[2/6] Latency decomposition (composite mainnet-sim model)...");
+  const latencyMd = await localOnlySection("02-latency", latency);
 
-  console.log("\n[3/7] Throughput (analytical + empirical)...");
+  console.log("\n[3/6] Throughput (analytical + empirical)...");
   const throughputData = await throughput.run();
   throughput.writeCsvFile(throughputData);
 
-  console.log("\n[4/7] Scalability sweep...");
+  console.log("\n[4/6] Scalability sweep...");
   const scalabilityMd = await localOnlySection("04-scalability", scalability);
 
-  console.log("\n[5/7] State-growth scalability...");
+  console.log("\n[5/6] State-growth scalability...");
   const stateGrowthMd = await localOnlySection("05-state-growth", stateGrowth);
 
-  console.log("\n[6/7] Latency decomposition (composite mainnet-sim model)...");
-  const latencyV2Md = await localOnlySection("06-latency-decomposition", latencyV2);
-
-  console.log("\n[7/7] Parallel-load scalability...");
-  const parallelMd = await localOnlySection("07-parallel-scalability", parallel);
+  console.log("\n[6/6] Parallel-load scalability...");
+  const parallelMd = await localOnlySection("06-parallel-scalability", parallel);
 
   // Concatenate sections in numbered order.
   const body = [
     reportHeader(),
     gas.renderSection(gasData),
     "",
-    latency.renderSection(latencyData),
+    latencyMd,
     "",
     throughput.renderSection(throughputData),
     "",
     scalabilityMd,
     "",
     stateGrowthMd,
-    "",
-    latencyV2Md,
     "",
     parallelMd,
     "",
