@@ -1,8 +1,8 @@
 /*
  * Section 2: latency decomposition under a mainnet-like composite delay model.
  *
- * Each operation is sampled at N = 10, 25 and 50 transactions. Per sample the
- * end-to-end confirmation latency is decomposed into three components:
+ * Each operation is sampled over 50 transactions. Per sample the end-to-end
+ * confirmation latency is decomposed into three components:
  *
  *   execution      MEASURED  -- wall-clock of the real EVM transaction
  *                               (send -> receipt) on the in-process node
@@ -28,10 +28,14 @@
 const {
   SEPOLIA_BLOCK_TIME_S,
   setMining, deployAll, registerRolesWithGas, getReceipt,
-  writeSection, writeNetworkCsv,
+  writeSection, writeCsv,
 } = require("./lib");
 
-const LATENCY_NS = [10, 25, 50];
+const LATENCY_SAMPLES = 50;
+// The CSV's network label: execution is measured locally, the delay model is
+// parameterized for a mainnet-like chain -- hence "mainnet-sim", not a claim
+// of measured mainnet data.
+const NETWORK_LABEL = "mainnet-sim";
 const RNG_SEED = 42;
 
 // Propagation / inclusion model parameters (ms).
@@ -150,37 +154,35 @@ const OPERATIONS = [
 
 async function run() {
   await setMining({ auto: true });
-  const results = []; // { N, op, components: {execution, propagation, blockInclusion, total} }
+  const N = LATENCY_SAMPLES;
+  console.log(`  measuring execution over ${N} full pipeline passes...`);
+  const ctx = await deployAll();
+  await registerRolesWithGas(ctx);
+  const sim = makeSamplers(mulberry32(RNG_SEED));
 
-  for (const N of LATENCY_NS) {
-    console.log(`  N=${N}: measuring execution over ${N} full pipeline passes...`);
-    const ctx = await deployAll();
-    await registerRolesWithGas(ctx);
-    const sim = makeSamplers(mulberry32(RNG_SEED + N));
+  const exec = Object.fromEntries(OPERATIONS.map((op) => [op, []]));
+  for (let i = 0; i < N; i++) {
+    const extra = ctx.rest[1 + i];
+    const e = await measureIteration(ctx, i, extra);
+    for (const op of OPERATIONS) exec[op].push(e[op]);
+    if ((i + 1) % 10 === 0) console.log(`    ${i + 1}/${N} passes done`);
+  }
 
-    const exec = Object.fromEntries(OPERATIONS.map((op) => [op, []]));
-    for (let i = 0; i < N; i++) {
-      const extra = ctx.rest[1 + i];
-      const e = await measureIteration(ctx, i, extra);
-      for (const op of OPERATIONS) exec[op].push(e[op]);
-      if ((i + 1) % 10 === 0) console.log(`    ${i + 1}/${N} passes done`);
-    }
-
-    for (const op of OPERATIONS) {
-      const execution = exec[op];
-      const propagation = execution.map(() => sim.propagation());
-      const blockInclusion = execution.map(() => sim.blockInclusion());
-      const total = execution.map((ms, j) => ms + propagation[j] + blockInclusion[j]);
-      results.push({
-        N, op,
-        components: {
-          execution: stats(execution),
-          propagation: stats(propagation),
-          blockInclusion: stats(blockInclusion),
-          total: stats(total),
-        },
-      });
-    }
+  const results = []; // { op, components: {execution, propagation, blockInclusion, total} }
+  for (const op of OPERATIONS) {
+    const execution = exec[op];
+    const propagation = execution.map(() => sim.propagation());
+    const blockInclusion = execution.map(() => sim.blockInclusion());
+    const total = execution.map((ms, j) => ms + propagation[j] + blockInclusion[j]);
+    results.push({
+      op,
+      components: {
+        execution: stats(execution),
+        propagation: stats(propagation),
+        blockInclusion: stats(blockInclusion),
+        total: stats(total),
+      },
+    });
   }
   return results;
 }
@@ -197,7 +199,7 @@ const COMPONENT_SOURCE = {
 function renderSection(data) {
   const lines = ["## 2. Latency decomposition (composite mainnet-sim model)\n"];
   lines.push(
-    "Per-operation confirmation latency at N = 10, 25 and 50 samples, " +
+    `Per-operation confirmation latency over ${LATENCY_SAMPLES} transactions, ` +
     "decomposed into **measured EVM execution** (wall-clock send→receipt on " +
     "the in-process node) plus **simulated** network components:\n"
   );
@@ -212,48 +214,41 @@ function renderSection(data) {
   lines.push(
     "> **Honesty label.** Only `execution` is a measurement. `propagation` " +
     "and `blockInclusion` are drawn from the parametric model above " +
-    "(`mainnet-sim`), with a seeded RNG (seed " + RNG_SEED + " + N) so runs " +
-    "are reproducible. This is **not** measured mainnet/testnet latency.\n"
+    "(network label `" + NETWORK_LABEL + "`), with a seeded RNG (seed " +
+    RNG_SEED + ") so runs are reproducible. This is **not** measured " +
+    "mainnet/testnet latency.\n"
   );
 
-  for (const N of LATENCY_NS) {
-    lines.push(`### N = ${N} samples per operation\n`);
-    lines.push("| Operation | Component | Source | Mean (ms) | P95 (ms) | P99 (ms) | Min (ms) | Max (ms) |");
-    lines.push("|---|---|---|---:|---:|---:|---:|---:|");
-    for (const r of data.filter((r) => r.N === N)) {
-      for (const [comp, s] of Object.entries(r.components)) {
-        const opCell = comp === "execution" ? `**${r.op}**` : "";
-        lines.push(
-          `| ${opCell} | ${comp} | ${COMPONENT_SOURCE[comp]} | ` +
-          `${s.meanMs.toLocaleString("en-US")} | ${s.p95Ms.toLocaleString("en-US")} | ` +
-          `${s.p99Ms.toLocaleString("en-US")} | ${s.minMs.toLocaleString("en-US")} | ` +
-          `${s.maxMs.toLocaleString("en-US")} |`
-        );
-      }
+  lines.push("| Operation | Component | Source | Mean (ms) | P95 (ms) | P99 (ms) | Min (ms) | Max (ms) |");
+  lines.push("|---|---|---|---:|---:|---:|---:|---:|");
+  for (const r of data) {
+    for (const [comp, s] of Object.entries(r.components)) {
+      const opCell = comp === "execution" ? `**${r.op}**` : "";
+      lines.push(
+        `| ${opCell} | ${comp} | ${COMPONENT_SOURCE[comp]} | ` +
+        `${s.meanMs.toLocaleString("en-US")} | ${s.p95Ms.toLocaleString("en-US")} | ` +
+        `${s.p99Ms.toLocaleString("en-US")} | ${s.minMs.toLocaleString("en-US")} | ` +
+        `${s.maxMs.toLocaleString("en-US")} |`
+      );
     }
-    lines.push("");
   }
+  lines.push("");
   lines.push("![Latency decomposition](./figures/latency_decomposition.png)");
-  lines.push("![Latency stability across N](./figures/latency_by_n.png)");
   lines.push("Raw data: [latency.csv](./latency.csv)");
   return lines.join("\n");
 }
 
 function writeCsvFile(data) {
-  const rows = [];
+  const rows = [`network,operation,component,meanMs,p95Ms,p99Ms,minMs,maxMs`];
   for (const r of data) {
     for (const [comp, s] of Object.entries(r.components)) {
       rows.push(
-        `${r.N},${r.op},${comp},${COMPONENT_SOURCE[comp]},` +
+        `${NETWORK_LABEL},${r.op},${comp},` +
         `${s.meanMs},${s.p95Ms},${s.p99Ms},${s.minMs},${s.maxMs}`
       );
     }
   }
-  writeNetworkCsv(
-    "latency.csv",
-    "N,operation,component,source,meanMs,p95Ms,p99Ms,minMs,maxMs",
-    rows
-  );
+  writeCsv("latency.csv", rows);
 }
 
 async function main() {
@@ -268,4 +263,4 @@ if (require.main === module) {
   main().catch((err) => { console.error(err); process.exit(1); });
 }
 
-module.exports = { run, renderSection, writeCsvFile, LATENCY_NS };
+module.exports = { run, renderSection, writeCsvFile, LATENCY_SAMPLES };

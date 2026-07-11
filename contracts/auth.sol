@@ -52,6 +52,29 @@ contract Auth {
         }
     }
 
+    /// @notice Number of pending requests (true) or approved members (false).
+    function memberCount(bool request) public view returns (uint256) {
+        return request ? arrayOfRequestedMembers.length : arrayOfMembers.length;
+    }
+
+    /// @notice Bounded read (SC10): up to `limit` entries of the pending
+    ///         (true) or approved (false) member list, starting at `offset`.
+    ///         Returns an empty array when `offset` is past the end.
+    function memberPage(bool request, uint256 offset, uint256 limit)
+        public view returns (MemberStruct[] memory page)
+    {
+        MemberStruct[] storage arr =
+            request ? arrayOfRequestedMembers : arrayOfMembers;
+        uint256 len = arr.length;
+        if (offset >= len) return page;
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+        page = new MemberStruct[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            page[i - offset] = arr[i];
+        }
+    }
+
     /// @notice Register a member: request approval (self only) or add directly.
     /// @param request true to request approval, false to add directly (the
     ///        internal approval path; a JOURNAL is always added directly).

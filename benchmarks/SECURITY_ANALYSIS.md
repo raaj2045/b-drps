@@ -153,12 +153,12 @@ scope here.)
 | SC07 | Flash Loan Attacks | No | — | N/A — no DeFi/economic logic |
 | SC08 | Integer Overflow/Underflow | Yes | compiler, Mythril | ✅ Pass — Solidity 0.8 checked arithmetic; empty-queue pop reverts rather than wrapping |
 | SC09 | Insecure Randomness | No | — | N/A — no randomness used |
-| SC10 | Denial of Service | **Yes** | manual, Echidna | ⚠️ **Partial** — unbounded array getters (`getApprovedOrRequestedMember`, `getRecievedByEIC`, …) grow O(n). The `denyRequest` griefing vector is closed (guarded + authorized). |
+| SC10 | Denial of Service | **Yes** | manual, Echidna | ✅ Pass — state-changing paths are O(1) (state-growth benchmark flat through K=5,000); `denyRequest` griefing closed; every list now has a bounded paginated getter (`queueLength`/`queuePage` on Main and Decision, `memberCount`/`memberPage` on Auth), so reads stay bounded at any array size. The original whole-array getters remain for frontend compatibility. |
 
-**Summary: 1 clean pass gained (SC01), 3 partials with documented deferrals
-(SC03, SC04, SC10), 3 clean passes (SC05, SC06, SC08), 3 not applicable.**
-Both Echidna findings are fixed and regression-netted; the remaining partials
-are the §4 data-model deferrals and getter pagination.
+**Summary: 5 clean passes (SC01, SC05, SC06, SC08, SC10), 2 partials with
+documented deferrals (SC03, SC04), 3 not applicable.**
+Both Echidna findings are fixed and regression-netted, and SC10 closed via
+paginated getters; the remaining partials are the §4 data-model deferrals.
 
 ## Interpreting the informational findings
 
@@ -179,7 +179,7 @@ contract behaviour.
 | Shared paper scratchpad (staging by author, not ID) | SC03 | manual, tests | Deferred — SECURITY.md §4.1 (ABI change) |
 | `Decision.EICDecision` wrong-pop | SC03 | manual, tests | Deferred — SECURITY.md §4.4 (ABI change) |
 | No-op reject branches | SC03 | tests | Deferred — SECURITY.md §4.2/§4.3 |
-| Unbounded array getters | SC10 | manual | Deferred (consider pagination) |
+| Unbounded array getters | SC10 | manual | **Fixed** — additive paginated getters (`queuePage`/`memberPage` + counts) bound every read; whole-array getters retained for frontend compatibility |
 
 ## Reproduce
 

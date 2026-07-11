@@ -354,4 +354,56 @@ describe("Main", function () {
       // SECURITY.md §4.1 — shared instanceofPaperStruct corrupts concurrent papers.
     });
   });
+
+  describe("Bounded reads (SC10 pagination)", function () {
+    it("queuePage slices the EiC queue and clamps limit to the array end", async function () {
+      const { main, author } = await loadFixture(deployAllRegistered);
+      await submitPaper(main, { author });
+
+      const EIC_QUEUE = 0;
+      expect(await main.queueLength(EIC_QUEUE)).to.equal(1);
+      const page = await main.queuePage(EIC_QUEUE, 0, 10);
+      expect(page.length).to.equal(1);
+      expect(page[0].authorAddress).to.equal(author.address);
+    });
+
+    it("queuePage returns an empty array when offset is past the end", async function () {
+      const { main, author } = await loadFixture(deployAllRegistered);
+      await submitPaper(main, { author });
+
+      expect((await main.queuePage(0, 1, 10)).length).to.equal(0);
+      expect((await main.queuePage(0, 500, 10)).length).to.equal(0);
+    });
+
+    it("every queue id is addressable and empty ids report zero length", async function () {
+      const { main } = await loadFixture(deployAllRegistered);
+      for (let id = 0; id < 8; id++) {
+        expect(await main.queueLength(id)).to.equal(0);
+        expect((await main.queuePage(id, 0, 10)).length).to.equal(0);
+      }
+    });
+
+    it("queue ids track the pipeline: paper moves 0 -> 1/2 -> 3/4 -> 5/6 -> 7", async function () {
+      const { main, author, eic, ae, reviewer } = await loadFixture(deployAllRegistered);
+      await submitPaper(main, { author });
+      await main.connect(eic).EICapproval(true);
+      await main.connect(ae).AEapproval(true);
+      await main.connect(reviewer).Reviewerapproval(true, "rev", reviewer.address);
+      await main.connect(ae).ReviewedByAE(true, "concur");
+
+      // Terminal state: approvals archived in 1/3/5, final copy in 7.
+      const lengths = [];
+      for (let id = 0; id < 8; id++) lengths.push(Number(await main.queueLength(id)));
+      expect(lengths).to.deep.equal([0, 1, 0, 1, 0, 1, 0, 1]);
+      expect((await main.queuePage(7, 0, 10))[0].reviewofAE).to.equal("concur");
+      // Exact-fit page (offset + limit == length): no clamping branch.
+      expect((await main.queuePage(1, 0, 1)).length).to.equal(1);
+    });
+
+    it("unknown queue id reverts", async function () {
+      const { main } = await loadFixture(deployAllRegistered);
+      await expect(main.queueLength(8)).to.be.revertedWith("Unknown queue id");
+      await expect(main.queuePage(8, 0, 10)).to.be.revertedWith("Unknown queue id");
+    });
+  });
 });

@@ -127,6 +127,28 @@ describe("Decision", function () {
       // SECURITY.md §4.4 — pops the last element, not the decided paper.
     });
   });
+
+  describe("Bounded reads (SC10 pagination)", function () {
+    it("queuePage tracks publish and return queues; unknown id reverts", async function () {
+      const { decision, eic, author } = await loadFixture(deployAllRegistered);
+      await decision.connect(eic).getPaperInfo(
+        "A", "a@x.com", "abs", "T", "l", "rev", "ae-rev", author.address);
+
+      expect(await decision.queueLength(0)).to.equal(1); // RreceivedByEIC
+      await decision.connect(eic).EICDecision(true, "Accepted");
+      expect(await decision.queueLength(0)).to.equal(0);
+      expect(await decision.queueLength(1)).to.equal(1); // Publishpaper
+      expect(await decision.queueLength(2)).to.equal(1); // ReturnAuthor
+
+      const published = await decision.queuePage(1, 0, 10);
+      expect(published[0].authorAddress).to.equal(author.address);
+      // Exact-fit page (offset + limit == length): no clamping branch.
+      expect((await decision.queuePage(2, 0, 1)).length).to.equal(1);
+      expect((await decision.queuePage(1, 5, 10)).length).to.equal(0);
+      await expect(decision.queueLength(3)).to.be.revertedWith("Unknown queue id");
+      await expect(decision.queuePage(3, 0, 1)).to.be.revertedWith("Unknown queue id");
+    });
+  });
 });
 
 // Stages one paper into Decision (as the EiC) for the access-control negatives.

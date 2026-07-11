@@ -31,26 +31,26 @@ const TOOLS = [
 ];
 
 const OWASP = [
-  ["SC01", "Access Control", "Yes", "Echidna; manual", "Pass",
-   "Every state-changing action is gated by a role modifier (onlyAuthor, onlyEiC, onlyAE, onlyReviewer) that reads the caller's role from the Auth contract; membership can only be approved or denied by an existing member, and only for an address with a pending request."],
-  ["SC02", "Price Oracle Manipulation", "No", "-", "N/A",
+  ["SC01 Access Control", "Mitigated",
+   "Every state-changing action is gated by a role modifier (onlyAuthor, onlyEiC, onlyAE, onlyReviewer) that reads the caller's role from the Auth contract; membership can only be approved or denied by an existing member, and only for an address with a pending request. Verified by Echidna property fuzzing and access-control negative tests."],
+  ["SC02 Price Oracle Manipulation", "Not applicable",
    "The system uses no price oracles or external data feeds, so there is nothing to manipulate."],
-  ["SC03", "Logic Errors", "Yes", "Echidna; tests", "Partial",
+  ["SC03 Logic Errors", "Partially mitigated",
    "Queue integrity is enforced by per-queue index maps with guarded enqueue/dequeue helpers -- duplicate or absent entries revert instead of corrupting state -- and is verified by 4 Echidna invariants holding at 50,000+ randomized calls. Remaining documented deferrals: shared staging area (SECURITY.md 4.1), Decision wrong-pop (4.4), no-op reject branches (4.2/4.3)."],
-  ["SC04", "Lack of Input Validation", "Yes", "Echidna; manual", "Partial",
+  ["SC04 Lack of Input Validation", "Partially mitigated",
    "Approve/deny revert unless the target has a pending request; every queue operation reverts unless the paper is actually present. Remaining gap: an empty role string defaults to AUTHOR, the lowest-privilege role (benign, documented)."],
-  ["SC05", "Reentrancy", "Yes", "Slither; Mythril", "Pass",
+  ["SC05 Reentrancy", "Mitigated",
    "The contracts make no external calls and transfer no value, so no reentrancy surface exists; confirmed by Slither's and Mythril's reentrancy detectors."],
-  ["SC06", "Unchecked External Calls", "No", "Slither; Mythril", "Pass",
+  ["SC06 Unchecked External Calls", "Mitigated",
    "No low-level .call, .send, or .transfer appears anywhere, so there are no external call results to leave unchecked."],
-  ["SC07", "Flash Loan Attacks", "No", "-", "N/A",
+  ["SC07 Flash Loan Attacks", "Not applicable",
    "No DeFi or economic logic exists; borrowed capital confers no advantage in the editorial workflow."],
-  ["SC08", "Integer Overflow/Underflow", "Yes", "compiler; Mythril", "Pass",
+  ["SC08 Integer Overflow/Underflow", "Mitigated",
    "Solidity 0.8 checked arithmetic reverts on any overflow or underflow, and popping an empty queue reverts rather than wrapping; confirmed by Mythril's arithmetic detectors."],
-  ["SC09", "Insecure Randomness", "No", "-", "N/A",
+  ["SC09 Insecure Randomness", "Not applicable",
    "The workflow is fully deterministic; no randomness is used anywhere."],
-  ["SC10", "Denial of Service", "Yes", "manual; Echidna", "Partial",
-   "All state-changing paths are O(1) regardless of state size (state-growth benchmark flat through K=5,000), and the denyRequest griefing vector is closed by the pending-request and authorization guards. Remaining gap: unbounded view getters grow O(n) (pagination deferred)."],
+  ["SC10 Denial of Service", "Mitigated",
+   "All state-changing paths are O(1) regardless of state size (state-growth benchmark flat through K=5,000); the denyRequest griefing vector is closed by the pending-request and authorization guards; and every list now has a bounded paginated getter (queueLength/queuePage on Main and Decision, memberCount/memberPage on Auth), so reads stay bounded at any array size."],
 ];
 
 const ECHIDNA = [
@@ -79,7 +79,7 @@ function writeCsv(filename, header, rows) {
 writeCsv("security_tools.csv",
   ["tool", "version", "category", "result"], TOOLS);
 writeCsv("security_owasp.csv",
-  ["id", "category", "applies", "checkedBy", "status", "howItPasses"], OWASP);
+  ["owaspTop10", "riskAssessment", "implementationDetails"], OWASP);
 writeCsv("security_echidna.csv",
   ["harness", "invariant", "calls", "verdict", "notes"], ECHIDNA);
 console.log("security CSVs written");
