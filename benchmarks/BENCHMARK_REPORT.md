@@ -1,6 +1,6 @@
 # Benchmark Report
 
-_Generated: 2026-07-11T17:54:03.674Z · network: sepoliaFork_
+_Generated: 2026-07-11T19:13:38.961Z · network: sepoliaFork_
 
 ## Methodology
 
@@ -54,38 +54,38 @@ Per-operation confirmation latency over 50 transactions, decomposed into **measu
 
 | Operation | Component | Source | Mean (ms) | P95 (ms) | Min (ms) | Max (ms) |
 |---|---|---|---:|---:|---:|---:|
-| **registerRequest** | execution | measured | 3 | 6 | 2 | 7 |
+| **registerRequest** | execution | measured | 2 | 4 | 1 | 6 |
 |  | propagation | mainnet-sim | 200 | 327 | 99 | 401 |
 |  | blockInclusion | mainnet-sim | 11,825 | 15,990 | 8,090 | 16,247 |
-|  | total | composite | 12,028 | 16,158 | 8,254 | 16,429 |
-| **approveRequest** | execution | measured | 4 | 7 | 2 | 13 |
+|  | total | composite | 12,027 | 16,157 | 8,250 | 16,427 |
+| **approveRequest** | execution | measured | 2 | 3 | 1 | 3 |
 |  | propagation | mainnet-sim | 201 | 385 | 64 | 398 |
 |  | blockInclusion | mainnet-sim | 12,089 | 14,226 | 6,872 | 15,910 |
-|  | total | composite | 12,294 | 14,354 | 7,142 | 16,112 |
-| **submitPaper** | execution | measured | 5 | 6 | 3 | 17 |
+|  | total | composite | 12,292 | 14,353 | 7,143 | 16,111 |
+| **submitPaper** | execution | measured | 3 | 5 | 2 | 7 |
 |  | propagation | mainnet-sim | 210 | 332 | 114 | 422 |
 |  | blockInclusion | mainnet-sim | 11,923 | 14,819 | 8,771 | 16,546 |
-|  | total | composite | 12,138 | 15,025 | 9,061 | 16,797 |
-| **EICapproval** | execution | measured | 3 | 6 | 2 | 8 |
+|  | total | composite | 12,137 | 15,024 | 9,060 | 16,795 |
+| **EICapproval** | execution | measured | 2 | 4 | 1 | 4 |
 |  | propagation | mainnet-sim | 205 | 309 | 116 | 318 |
 |  | blockInclusion | mainnet-sim | 11,580 | 15,116 | 7,393 | 15,713 |
-|  | total | composite | 11,788 | 15,332 | 7,594 | 15,934 |
-| **AEapproval** | execution | measured | 3 | 7 | 2 | 7 |
+|  | total | composite | 11,787 | 15,329 | 7,594 | 15,933 |
+| **AEapproval** | execution | measured | 2 | 3 | 1 | 4 |
 |  | propagation | mainnet-sim | 216 | 358 | 98 | 385 |
 |  | blockInclusion | mainnet-sim | 12,677 | 16,164 | 9,621 | 17,413 |
-|  | total | composite | 12,896 | 16,311 | 9,803 | 17,624 |
-| **Reviewerapproval** | execution | measured | 4 | 8 | 2 | 16 |
+|  | total | composite | 12,895 | 16,307 | 9,802 | 17,623 |
+| **Reviewerapproval** | execution | measured | 3 | 4 | 1 | 7 |
 |  | propagation | mainnet-sim | 218 | 307 | 70 | 437 |
 |  | blockInclusion | mainnet-sim | 11,819 | 15,735 | 7,646 | 16,080 |
-|  | total | composite | 12,040 | 15,992 | 7,809 | 16,324 |
-| **ReviewedByAE** | execution | measured | 3 | 4 | 2 | 7 |
+|  | total | composite | 12,039 | 15,988 | 7,809 | 16,324 |
+| **ReviewedByAE** | execution | measured | 2 | 2 | 1 | 3 |
 |  | propagation | mainnet-sim | 215 | 369 | 75 | 379 |
 |  | blockInclusion | mainnet-sim | 11,786 | 14,350 | 7,024 | 16,485 |
-|  | total | composite | 12,004 | 14,629 | 7,202 | 16,679 |
-| **EICDecision** | execution | measured | 8 | 11 | 4 | 16 |
+|  | total | composite | 12,003 | 14,628 | 7,202 | 16,679 |
+| **EICDecision** | execution | measured | 4 | 6 | 2 | 7 |
 |  | propagation | mainnet-sim | 212 | 334 | 96 | 379 |
 |  | blockInclusion | mainnet-sim | 12,214 | 14,841 | 8,850 | 15,205 |
-|  | total | composite | 12,434 | 15,070 | 9,124 | 15,368 |
+|  | total | composite | 12,431 | 15,063 | 9,122 | 15,369 |
 
 ![Latency decomposition](./figures/latency_decomposition.png)
 Raw data: [latency.csv](./latency.csv)
@@ -112,8 +112,8 @@ Theoretical upper bound assuming a block contains only that operation.
 - Operation: `submission (getPaperInfo + sendToEIC)`
 - Submissions: 100 (two txs each)
 - Blocks consumed: 200
-- Wall-clock: 1107 ms
-- Local TPS (instant-mine, no block-time floor): 90.33
+- Wall-clock: 1170 ms
+- Local TPS (instant-mine, no block-time floor): 85.47
 
 Raw data: [throughput.csv](./throughput.csv)
 
@@ -125,11 +125,11 @@ Full Auth->Main->Decision pipeline run for N papers.
 
 | N | Total gas | Mean gas / paper | Wall-clock (ms) | Mean ms / paper |
 |---:|---:|---:|---:|---:|
-| 1 | 4,957,138 | 4,957,138 | 23 | 23 |
-| 10 | 48,310,651 | 4,831,065 | 316 | 32 |
-| 50 | 241,002,371 | 4,820,047 | 4,251 | 85 |
-| 100 | 481,860,021 | 4,818,600 | 2,229 | 22 |
-| 500 | 2,408,765,221 | 4,817,530 | 11,669 | 23 |
+| 1 | 4,957,138 | 4,957,138 | 20 | 20 |
+| 10 | 48,310,651 | 4,831,065 | 214 | 21 |
+| 50 | 241,002,371 | 4,820,047 | 1,085 | 22 |
+| 100 | 481,860,021 | 4,818,600 | 2,033 | 20 |
+| 500 | 2,408,765,221 | 4,817,530 | 11,263 | 23 |
 
 Raw data: [scalability.csv](./scalability.csv)
 
@@ -160,25 +160,25 @@ N distinct clients fire transactions concurrently (`Promise.all`), for N = 10 �
 | N | Phase | Wall-clock (ms) | TPS | Mean tx (ms) | P95 tx (ms) | Max tx (ms) | Success | Queue intact |
 |---:|---|---:|---:|---:|---:|---:|---:|---|
 | 10 | registration | 20 | 500 | 19 | 20 | 20 | 10/10 | — |
-| 10 | submission | 38 | 26.32 | 38 | 38 | 38 | 1/10 | ✅ |
-| 20 | registration | 26 | 769.23 | 25 | 26 | 26 | 20/20 | — |
-| 20 | submission | 42 | 23.81 | 42 | 42 | 42 | 1/20 | ✅ |
-| 30 | registration | 53 | 566.04 | 50 | 52 | 52 | 30/30 | — |
-| 30 | submission | 69 | 14.49 | 68 | 68 | 68 | 1/30 | ✅ |
-| 40 | registration | 52 | 769.23 | 49 | 51 | 51 | 40/40 | — |
-| 40 | submission | 83 | 12.05 | 83 | 83 | 83 | 1/40 | ✅ |
-| 50 | registration | 66 | 757.58 | 63 | 66 | 66 | 50/50 | — |
-| 50 | submission | 106 | 9.43 | 106 | 106 | 106 | 1/50 | ✅ |
-| 60 | registration | 77 | 779.22 | 73 | 76 | 76 | 60/60 | — |
-| 60 | submission | 120 | 8.33 | 120 | 120 | 120 | 1/60 | ✅ |
-| 70 | registration | 74 | 945.95 | 69 | 73 | 73 | 70/70 | — |
-| 70 | submission | 129 | 7.75 | 128 | 128 | 128 | 1/70 | ✅ |
-| 80 | registration | 84 | 952.38 | 79 | 82 | 83 | 80/80 | — |
-| 80 | submission | 137 | 7.3 | 137 | 137 | 137 | 1/80 | ✅ |
-| 90 | registration | 96 | 937.5 | 91 | 95 | 96 | 90/90 | — |
-| 90 | submission | 161 | 6.21 | 161 | 161 | 161 | 1/90 | ✅ |
-| 100 | registration | 106 | 943.4 | 101 | 105 | 105 | 100/100 | — |
-| 100 | submission | 202 | 4.95 | 191 | 191 | 191 | 1/100 | ✅ |
+| 10 | submission | 35 | 28.57 | 34 | 34 | 34 | 1/10 | ✅ |
+| 20 | registration | 35 | 571.43 | 33 | 35 | 35 | 20/20 | — |
+| 20 | submission | 54 | 18.52 | 54 | 54 | 54 | 1/20 | ✅ |
+| 30 | registration | 45 | 666.67 | 43 | 44 | 45 | 30/30 | — |
+| 30 | submission | 66 | 15.15 | 66 | 66 | 66 | 1/30 | ✅ |
+| 40 | registration | 79 | 506.33 | 76 | 78 | 78 | 40/40 | — |
+| 40 | submission | 101 | 9.9 | 101 | 101 | 101 | 1/40 | ✅ |
+| 50 | registration | 69 | 724.64 | 67 | 69 | 69 | 50/50 | — |
+| 50 | submission | 115 | 8.7 | 115 | 115 | 115 | 1/50 | ✅ |
+| 60 | registration | 80 | 750 | 75 | 79 | 79 | 60/60 | — |
+| 60 | submission | 137 | 7.3 | 137 | 137 | 137 | 1/60 | ✅ |
+| 70 | registration | 100 | 700 | 96 | 99 | 99 | 70/70 | — |
+| 70 | submission | 168 | 5.95 | 168 | 168 | 168 | 1/70 | ✅ |
+| 80 | registration | 110 | 727.27 | 105 | 108 | 109 | 80/80 | — |
+| 80 | submission | 189 | 5.29 | 189 | 189 | 189 | 1/80 | ✅ |
+| 90 | registration | 129 | 697.67 | 122 | 128 | 128 | 90/90 | — |
+| 90 | submission | 216 | 4.63 | 216 | 216 | 216 | 1/90 | ✅ |
+| 100 | registration | 139 | 719.42 | 132 | 137 | 138 | 100/100 | — |
+| 100 | submission | 253 | 3.95 | 253 | 253 | 253 | 1/100 | ✅ |
 
 Raw data: [parallel_scalability.csv](./parallel_scalability.csv)
 
@@ -187,6 +187,8 @@ Raw data: [parallel_scalability.csv](./parallel_scalability.csv)
 N papers are pushed end-to-end, then the storage the contracts occupy is accounted slot-by-slot from actual on-chain state (walked via the paginated getters) using Solidity's storage-layout rules — inline vs. long strings, array length slots, live index-map entries, and Auth's struct-mirror mappings. Bytes = slots × 32.
 
 > **Cross-checked against the EVM.** For one full lifecycle, a `debug_traceTransaction` count of net SSTOREs (slots left non-zero) gives **123 slots** vs. **123** from the analytical accounting — an exact match. Storage layout is EVM-deterministic, so these figures are network-independent (local-only run, same rationale as Section 5).
+
+**What is stored per paper is constant**: metadata strings plus the IPFS link — the manuscript itself lives off-chain (Pinata/IPFS), so the on-chain footprint does not depend on the PDF's size. Total storage therefore grows linearly while bytes/paper is flat; the slightly higher N=1 value is the one-time overhead (staging structs, array length slots) amortizing over more papers.
 
 The pipeline archives a copy of the paper at every approval stage (`approvedByEIC`, `approvedByAE`, `reviewedByReviewer`, `reviewedByAE`) plus two copies in Decision (`Publishpaper`, `ReturnAuthor`) — the `copies/paper` column quantifies this write amplification.
 

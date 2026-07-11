@@ -281,6 +281,14 @@ function renderSection(data) {
     "network-independent (local-only run, same rationale as Section 5).\n"
   );
   lines.push(
+    "**What is stored per paper is constant**: metadata strings plus the " +
+    "IPFS link — the manuscript itself lives off-chain (Pinata/IPFS), so " +
+    "the on-chain footprint does not depend on the PDF's size. Total " +
+    "storage therefore grows linearly while bytes/paper is flat; the " +
+    "slightly higher N=1 value is the one-time overhead (staging structs, " +
+    "array length slots) amortizing over more papers.\n"
+  );
+  lines.push(
     "The pipeline archives a copy of the paper at every approval stage " +
     "(`approvedByEIC`, `approvedByAE`, `reviewedByReviewer`, `reviewedByAE`) " +
     "plus two copies in Decision (`Publishpaper`, `ReturnAuthor`) — the " +

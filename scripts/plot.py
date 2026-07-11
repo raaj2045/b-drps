@@ -104,6 +104,14 @@ def plot_storage_growth():
     ax2.set_ylim(0, max(per_paper_kb) * 1.4)
     ax2.grid(False)
     ax2.spines["top"].set_visible(False)
+    # The per-paper line is constant by design: on-chain state holds only
+    # metadata + the IPFS link (manuscript off-chain). The small early
+    # decline is fixed deployment overhead amortizing over more papers.
+    ax2.annotate(
+        f"constant ≈{per_paper_kb[-1]:.1f} KiB/paper\n(metadata + IPFS link; manuscript off-chain)",
+        xy=(N[-1], per_paper_kb[-1]), xytext=(0.45, 0.32),
+        textcoords="axes fraction", fontsize=9, color="#3A7A4E",
+        arrowprops=dict(arrowstyle="->", color="#55A868", lw=0.8))
 
     ax1.set_title("On-chain storage growth (slot-accounted, trace-validated)")
     _save(fig, "storage_growth")
@@ -111,9 +119,10 @@ def plot_storage_growth():
 
 def plot_latency_decomposition():
     """Stacked bars: per-operation latency split into measured execution +
-    simulated propagation + simulated block inclusion (50 samples), with the
-    total's P95 marked. Simulated components are hatched and the title
-    carries the mainnet-sim label so the figure is honest standalone."""
+    simulated propagation + simulated block inclusion (50 samples). The
+    legend carries each component's average so the composition is readable
+    at a glance; simulated components are hatched and the title carries the
+    mainnet-sim label so the figure is honest standalone."""
     path = DATA_DIR / "latency.csv"
     if not path.exists():
         print(f"  (skip latency-decomposition: {path.name} not found)")
@@ -127,25 +136,25 @@ def plot_latency_decomposition():
             for op in ops]
         for c in ("execution", "propagation", "blockInclusion", "total")
     }
-    tot_rows = {op: next(r for r in rows
-                         if r["operation"] == op and r["component"] == "total")
-                for op in ops}
+    def avg(component):
+        vals = comp[component]
+        return sum(vals) / len(vals)
+
+    def fmt_ms(ms):
+        return f"{ms/1000:,.1f} s" if ms >= 1000 else f"{ms:,.0f} ms"
 
     fig, ax = plt.subplots(figsize=(8.5, 4.5))
     x = range(len(ops))
-    b1 = ax.bar(x, comp["execution"], color="#4C72B0",
-                edgecolor="black", linewidth=0.5, label="execution (measured)")
-    b2 = ax.bar(x, comp["propagation"], bottom=comp["execution"],
-                color="#DD8452", edgecolor="black", linewidth=0.5,
-                hatch="//", label="propagation (simulated)")
+    ax.bar(x, comp["execution"], color="#4C72B0",
+           edgecolor="black", linewidth=0.5,
+           label=f"execution (measured) — avg {fmt_ms(avg('execution'))}")
+    ax.bar(x, comp["propagation"], bottom=comp["execution"],
+           color="#DD8452", edgecolor="black", linewidth=0.5, hatch="//",
+           label=f"propagation (simulated) — avg {fmt_ms(avg('propagation'))}")
     bottom2 = [a + b for a, b in zip(comp["execution"], comp["propagation"])]
     ax.bar(x, comp["blockInclusion"], bottom=bottom2, color="#55A868",
            edgecolor="black", linewidth=0.5, hatch="//",
-           label="block inclusion (simulated)")
-    # P95 marker on the composite total.
-    p95 = [int(tot_rows[op]["p95Ms"]) for op in ops]
-    ax.plot(x, p95, "v", color="#C44E52", markersize=6, linestyle="none",
-            label="total P95")
+           label=f"block inclusion (simulated) — avg {fmt_ms(avg('blockInclusion'))}")
     for i, op in enumerate(ops):
         ax.text(i, comp["total"][i] * 0.5,
                 f"{comp['total'][i]/1000:.1f}s", ha="center", va="center",
