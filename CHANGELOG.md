@@ -19,6 +19,29 @@ for the response-to-reviewers letter.
 | #7 | README benchmark methodology | **R3** (analytical depth) |
 | #8 | Security hardening (access control, events, `SECURITY.md`) | **R1** (no access control), **R3** (no security analysis), **R4** (no threat model / access modifiers / events) |
 | P7 | Repository hygiene (this PR) | **R3** (writing clarity), **R4** (LICENSE/SPDX consistency) |
+| fuzz-fix | Fix both Echidna findings (queue index corruption, member eviction) | **R3** (security analysis acts on its findings), **R4** (fuzz-verified state-machine integrity) |
+
+### Fixed
+- **Fuzz findings — queue index corruption and member eviction
+  (`fix/fuzz-findings`).** Both defects surfaced by Echidna property fuzzing
+  (`benchmarks/SECURITY_ANALYSIS.md` F1/F2) are fixed ABI-preserving and
+  re-verified: **all 7 invariants pass at 50,000+ calls each**.
+  - *F1 (Main):* every pipeline queue now pairs its array with an
+    `address => index+1` map (0 = absent) managed by shared
+    `_enqueue`/`_dequeue` helpers — duplicate submission by a queued author
+    and removal of an absent paper revert instead of corrupting the
+    swap-and-pop. Pre-fix, the downstream queues never wrote their index maps
+    at all (every removal swap-popped slot 0).
+  - *F2 (Auth):* `denyRequest`/`approoveRequest` require a pending request and
+    clear the full request state, which also lets a denied requester
+    re-request.
+  - Echidna harnesses reworked for post-P5 role gating (`MockAuth` role map
+    for `EchidnaMain`; JOURNAL self-registration + external self-call for
+    `EchidnaAuthGuarded`) — without this the invariants pass vacuously.
+    `scripts/benchmark/lib.js` deployment fixed for the P5 constructor
+    signature, and all benchmark CSVs/figures regenerated (dual-network).
+  - Unit regressions: `test/Auth.test.js` / `test/Main.test.js`
+    *"Fuzz-finding regressions"* suites; coverage 100% stmt/func/line.
 
 ### Added
 - **P7 — Repository hygiene.** Concise NatSpec (`@notice`, plus `@param`/`@return`

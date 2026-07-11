@@ -58,12 +58,39 @@ All state-changing ops now emit events for an off-chain audit trail.
 
 ---
 
+## 3a. Fuzz findings — fixed (`fix/fuzz-findings`)
+
+Two defects found by Echidna property fuzzing (evidence log:
+`benchmarks/SECURITY_ANALYSIS.md` F1/F2) were fixed ABI-preserving — internal
+mappings and guards only, no signature changes:
+
+- **Queue index corruption (Main, F1)** — every pipeline queue now pairs its
+  array with an `address => index+1` map (0 = absent) managed by shared
+  `_enqueue`/`_dequeue` helpers. Duplicate submission by a queued author and
+  removal of an absent paper revert instead of corrupting the swap-and-pop.
+  The pre-fix code also never wrote the downstream queues' index maps, so
+  every removal swap-popped slot 0 — correct only single-paper by accident.
+- **Member eviction (Auth, F2)** — `denyRequest`/`approoveRequest` require a
+  pending request and clear the full request state on completion (a denied
+  requester can now re-request).
+
+All 7 Echidna invariants pass at 50k+ calls each; unit regressions live in
+`test/Auth.test.js` and `test/Main.test.js` under *"Fuzz-finding regressions"*.
+
+---
+
 ## 4. Deferred architectural limitations
 
 Known bugs intentionally **not** fixed — fixing them changes the ABI/data model
 and breaks `v1.0-paper` parity. Each is pinned by a passing characterization
 test and/or a `.skip`'d test whose un-skipping is the future-fix acceptance
 criterion.
+
+> Scope note: §4.1's *staging* model (actions apply to the most-recently-staged
+> paper) is unchanged, but its most damaging consequence — queue/index
+> corruption under multiple papers — is fixed per §3a. What remains deferred is
+> the by-ID data model itself (§4.1), the no-op reject branches (§4.2/§4.3),
+> and Decision's wrong-pop (§4.4).
 
 ### §4.1 — Single shared `instanceofPaperStruct` (Main + Decision)
 
