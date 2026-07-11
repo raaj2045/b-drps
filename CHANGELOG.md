@@ -20,7 +20,8 @@ for the response-to-reviewers letter.
 | #8 | Security hardening (access control, events, `SECURITY.md`) | **R1** (no access control), **R3** (no security analysis), **R4** (no threat model / access modifiers / events) |
 | P7 | Repository hygiene (this PR) | **R3** (writing clarity), **R4** (LICENSE/SPDX consistency) |
 | fuzz-fix | Fix both Echidna findings (queue index corruption, member eviction) | **R3** (security analysis acts on its findings), **R4** (fuzz-verified state-machine integrity) |
-| paper-artifacts | Latency decomposition (N=10/25/50), parallel-load sweep (10–100), security CSVs, figures | **R3** (latency/scalability depth, percentile statistics), **R4** (variance reporting, honest simulation labelling) |
+| paper-artifacts | Latency decomposition, parallel-load sweep (10–100), security CSVs, figures | **R3** (latency/scalability depth, percentile statistics), **R4** (variance reporting, honest simulation labelling) |
+| sc10-pagination | Bounded paginated getters (Main/Decision/Auth) close OWASP SC10 | **R3** (security analysis acts on its findings), **R4** (DoS surface removed without ABI break) |
 
 ### Changed
 - **Latency benchmark consolidated** (`refactor/consolidate-latency`): the
@@ -54,6 +55,15 @@ for the response-to-reviewers letter.
     *"Fuzz-finding regressions"* suites; coverage 100% stmt/func/line.
 
 ### Added
+- **SC10 closed — paginated getters (`fix/sc10-pagination`).** Additive
+  bounded-read API: `queueLength`/`queuePage` on `Main` (8 queues) and
+  `Decision` (3 queues), `memberCount`/`memberPage` on `Auth`. Whole-array
+  getters retained, so the frontend is unaffected; ABIs regenerated. OWASP
+  SC10 (Denial of Service) moves Partial → **Pass** (state-changing paths were
+  already O(1); reads are now bounded too). Latency CSV reshaped to the
+  paper's table format (50 transactions, `mainnet-sim` network label, one
+  component row per operation); OWASP CSV reshaped to
+  OWASP-Top-10/Risk-Assessment/Implementation-Details columns.
 - **Paper artifacts — latency decomposition, parallel-load sweep, security
   CSVs (`feat/paper-artifacts`).**
   - *Section 2 — latency decomposition* (`scripts/benchmark/latency.js`):
