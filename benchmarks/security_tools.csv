@@ -1,0 +1,6 @@
+tool,version,category,result
+Slither,0.11.5,SAST (static),0 High / 0 Medium / 0 Low; 58 informational. One Medium (locked-ether) found on an earlier revision and fixed.
+Mythril,0.24.8,Symbolic execution,No issues at -t 1 and -t 3 on all three contracts (bounded; --execution-timeout 150).
+Echidna,2.3.2,Property fuzzing,2 invariants falsified (real bugs: EIC queue index corruption; member eviction) -- both fixed; all 7 invariants pass at 50k+ calls.
+Solhint,6.2.1,Linter / SAST-lite,"0 errors, 114 warnings (all style/documentation)."
+solidity-coverage,toolbox,Dynamic test coverage,100% stmt / 100% func / 100% line / 98.81% branch over 43 passing tests.

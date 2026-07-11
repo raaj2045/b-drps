@@ -1,0 +1,8 @@
+harness,invariant,calls,verdict,notes
+EchidnaMain,echidna_eic_index_consistent,50078,passing,Previously falsified in 2 calls (F1); fixed via sentinel index maps + guarded _enqueue/_dequeue.
+EchidnaMain,echidna_ae_index_consistent,50078,passing,New invariant (post-fix).
+EchidnaMain,echidna_reviewer_index_consistent,50078,passing,New invariant (post-fix).
+EchidnaMain,echidna_rbae_index_consistent,50078,passing,New invariant (post-fix).
+EchidnaAuth,echidna_request_index_consistent,50051,passing,
+EchidnaAuth,echidna_approved_flag_implies_entry,50051,passing,
+EchidnaAuthGuarded,echidna_count_matches,50083,passing,Previously falsified (F2 member eviction); fixed via pending-request guard + state cleanup.

@@ -312,6 +312,152 @@ def plot_gas_network_compare():
     _save(fig, "gas_network_compare")
 
 
+def plot_latency_decomposition():
+    """Stacked bars: per-operation latency split into measured execution +
+    simulated propagation + simulated block inclusion (N=50 pass), with the
+    total's P95/P99 marked. Simulated components are hatched and the title
+    carries the mainnet-sim label so the figure is honest standalone."""
+    path = DATA_DIR / "latency_v2.csv"
+    if not path.exists():
+        print(f"  (skip latency-decomposition: {path.name} not found)")
+        return
+    rows = _authoritative(_read_csv(path))
+    n_max = max(int(r["N"]) for r in rows)
+    rows = [r for r in rows if int(r["N"]) == n_max]
+    ops = list(dict.fromkeys(r["operation"] for r in rows))
+    comp = {
+        c: [int(next(r for r in rows
+                     if r["operation"] == op and r["component"] == c)["meanMs"])
+            for op in ops]
+        for c in ("execution", "propagation", "blockInclusion", "total")
+    }
+    tot_rows = {op: next(r for r in rows
+                         if r["operation"] == op and r["component"] == "total")
+                for op in ops}
+
+    fig, ax = plt.subplots(figsize=(8.5, 4.5))
+    x = range(len(ops))
+    b1 = ax.bar(x, comp["execution"], color="#4C72B0",
+                edgecolor="black", linewidth=0.5, label="execution (measured)")
+    b2 = ax.bar(x, comp["propagation"], bottom=comp["execution"],
+                color="#DD8452", edgecolor="black", linewidth=0.5,
+                hatch="//", label="propagation (simulated)")
+    bottom2 = [a + b for a, b in zip(comp["execution"], comp["propagation"])]
+    ax.bar(x, comp["blockInclusion"], bottom=bottom2, color="#55A868",
+           edgecolor="black", linewidth=0.5, hatch="//",
+           label="block inclusion (simulated)")
+    # P95 / P99 markers on the composite total.
+    p95 = [int(tot_rows[op]["p95Ms"]) for op in ops]
+    p99 = [int(tot_rows[op]["p99Ms"]) for op in ops]
+    ax.plot(x, p95, "v", color="#C44E52", markersize=6, linestyle="none",
+            label="total P95")
+    ax.plot(x, p99, "^", color="#8172B3", markersize=6, linestyle="none",
+            label="total P99")
+    for i, op in enumerate(ops):
+        ax.text(i, comp["total"][i] * 0.5,
+                f"{comp['total'][i]/1000:.1f}s", ha="center", va="center",
+                fontsize=8, color="white", fontweight="bold")
+
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(ops, rotation=25, ha="right", fontsize=9)
+    ax.set_ylabel("Latency (ms)")
+    ax.yaxis.set_major_formatter(
+        mtick.FuncFormatter(lambda v, _: f"{v/1000:.0f}k"))
+    ax.set_title(
+        f"Confirmation-latency decomposition, N={n_max} samples/op\n"
+        "(execution measured; propagation + inclusion from the mainnet-sim model)")
+    ax.legend(frameon=False, fontsize=8, loc="center left",
+              bbox_to_anchor=(1.02, 0.5))
+    _save(fig, "latency_decomposition")
+
+
+def plot_latency_v2_by_n():
+    """Grouped bars of the composite total mean per operation at N=10/25/50,
+    with min–P95 whiskers: shows the estimates are stable in sample size."""
+    path = DATA_DIR / "latency_v2.csv"
+    if not path.exists():
+        print(f"  (skip latency-v2-by-n: {path.name} not found)")
+        return
+    rows = [r for r in _authoritative(_read_csv(path)) if r["component"] == "total"]
+    ns = sorted({int(r["N"]) for r in rows})
+    ops = list(dict.fromkeys(r["operation"] for r in rows))
+    by_n = {n: {r["operation"]: r for r in rows if int(r["N"]) == n} for n in ns}
+
+    import numpy as np
+    x = np.arange(len(ops))
+    width = 0.8 / len(ns)
+    palette = ["#A8C4E0", "#6A94C4", "#2F5C94"]
+    fig, ax = plt.subplots(figsize=(8.5, 4.5))
+    for i, n in enumerate(ns):
+        means = [int(by_n[n][op]["meanMs"]) for op in ops]
+        lo = [m - int(by_n[n][op]["minMs"]) for m, op in zip(means, ops)]
+        hi = [int(by_n[n][op]["p95Ms"]) - m for m, op in zip(means, ops)]
+        ax.bar(x + i * width, means, width, yerr=[lo, hi], capsize=2,
+               color=palette[i % len(palette)], edgecolor="black",
+               linewidth=0.4, label=f"N={n}", error_kw={"linewidth": 0.7})
+    ax.set_xticks(x + width * (len(ns) - 1) / 2)
+    ax.set_xticklabels(ops, rotation=25, ha="right", fontsize=9)
+    ax.set_ylabel("Total latency (ms), composite model")
+    ax.yaxis.set_major_formatter(
+        mtick.FuncFormatter(lambda v, _: f"{v/1000:.0f}k"))
+    ax.set_title("Composite total latency is stable across sample sizes\n"
+                 "(bars = mean, whiskers = min…P95; mainnet-sim model)")
+    ax.legend(frameon=False)
+    _save(fig, "latency_v2_by_n")
+
+
+def plot_parallel():
+    """Parallel-load sweep, three panels: registration throughput (the
+    parallel-safe scalability curve), registration per-tx latency, and the
+    per-phase success rate -- where the submission phase's 1/N curve shows the
+    shared-staging serialization (SECURITY.md 4.1) failing safe."""
+    path = DATA_DIR / "parallel_scalability.csv"
+    if not path.exists():
+        print(f"  (skip parallel: {path.name} not found)")
+        return
+    rows = _authoritative(_read_csv(path))
+
+    def phase_rows(ph):
+        return sorted([r for r in rows if r["phase"] == ph],
+                      key=lambda r: int(r["N"]))
+
+    reg = phase_rows("registration")
+    sub = phase_rows("submission")
+    N = [int(r["N"]) for r in reg]
+
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(13, 4))
+
+    ax1.plot(N, [float(r["tps"]) for r in reg], "o-", color="#4C72B0")
+    ax1.set_xlabel("N concurrent clients")
+    ax1.set_ylabel("Achieved throughput (tx/s)")
+    ax1.set_title("Registration throughput\n(parallel-safe workload)")
+
+    ax2.plot(N, [int(r["meanTxMs"]) for r in reg], "o-", color="#4C72B0",
+             label="mean")
+    ax2.plot(N, [int(r["p95TxMs"]) for r in reg], "s--", color="#4C72B0",
+             alpha=0.55, label="P95")
+    ax2.set_xlabel("N concurrent clients")
+    ax2.set_ylabel("Per-transaction latency (ms)")
+    ax2.set_title("Registration per-tx latency")
+    ax2.legend(frameon=False)
+
+    ax3.plot(N, [100.0 * int(r["success"]) / int(r["N"]) for r in reg],
+             "o-", color="#4C72B0", label="registration")
+    ax3.plot([int(r["N"]) for r in sub],
+             [100.0 * int(r["success"]) / int(r["N"]) for r in sub],
+             "s-", color="#DD8452", label="submission (shared staging)")
+    ax3.set_xlabel("N concurrent clients")
+    ax3.set_ylabel("Success rate (%)")
+    ax3.set_ylim(-5, 105)
+    ax3.set_title("Success rate: shared staging\nserializes submissions (fails safe)")
+    ax3.legend(frameon=False, fontsize=9)
+
+    fig.suptitle("Parallel-load scalability (local instant-mine node)",
+                 y=1.03, fontsize=13)
+    fig.tight_layout()
+    _save(fig, "parallel_scalability")
+
+
 def main():
     print(f"reading from {DATA_DIR.relative_to(ROOT)}/")
     plot_gas_network_compare()
@@ -321,6 +467,9 @@ def main():
     plot_throughput()
     plot_scalability()
     plot_state_growth()
+    plot_latency_decomposition()
+    plot_latency_v2_by_n()
+    plot_parallel()
     print(f"figures in {FIG_DIR.relative_to(ROOT)}/")
 
 
