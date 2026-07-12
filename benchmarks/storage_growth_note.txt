@@ -1,9 +1,9 @@
-Only bounded metadata is persisted on-chain for each paper — fixed
-character fields (author, title, abstract, and review comments) together
-with the IPFS content-identifier link of the manuscript, which itself
-resides off-chain — yielding a constant per-paper footprint of
-approximately 3.0 KiB (six copies retained across the pipeline's archival
-arrays) and hence strictly linear growth in total storage, independent of
+For each paper, only its metadata is stored on-chain — the author, title,
+abstract, and review comments, together with the IPFS content identifier
+(CID) that references the manuscript, which is stored off-chain — so each
+paper occupies a fixed amount of storage (approximately 3.0 KiB, of which
+six copies are retained across the pipeline's archival arrays) and total
+storage grows linearly with the number of papers, independent of
 manuscript size. The slot-level accounting underlying the figure was
 validated against an SSTORE count obtained via debug_traceTransaction,
 with exact agreement (123 = 123 slots per publication lifecycle).
