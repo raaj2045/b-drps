@@ -221,7 +221,6 @@ def plot_scalability():
     ax2.legend(frameon=False, fontsize=8, ncol=3, loc="upper center",
                bbox_to_anchor=(0.5, -0.22))
 
-    fig.suptitle("Costs stay constant as the system scales", y=1.02, fontsize=13)
     fig.tight_layout()
     _save(fig, "scalability")
 
