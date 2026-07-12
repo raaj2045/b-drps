@@ -1,59 +1,9 @@
-Scalability figure: why gas is the metric, and what the graph shows
-====================================================================
-(Companion note to figures/scalability.* — data from scalability.csv and
-state_growth.csv. Adapt freely as paper text.)
-
-Why gas is the right scalability metric
----------------------------------------
-Gas is the EVM's own unit of computational and storage work, and it is
-deterministic: the same transaction costs the same gas on a local node, a
-testnet, or mainnet (verified in this work — per-operation gas is
-byte-for-byte identical between the local network and forked Sepolia
-state; see gas.csv). Wall-clock measurements on a development node
-reflect the test harness, not the network, so gas is the only
-scalability metric that transfers to a real deployment unchanged.
-Everything a user experiences at scale derives from it: transaction fees
-are gas x gas-price, and throughput is block-gas-limit / gas-per-
-operation. If gas per operation stays constant as the system grows, cost
-and throughput stay constant too.
-
-What the two panels show
-------------------------
-Panel 1 (cost per paper vs. workload size): the full editorial pipeline
-(submission -> EiC -> AE -> reviewer -> final decision) was executed for
-N = 1, 10, 50, 100, and 500 papers. The marginal cost per paper is
-constant: the measured means fit mean(N) = 4,817,250 + 139,888/N gas to
-within 174 gas (0.004%) at every N. That is, every paper after the first
-costs exactly the same 4.82M gas; the first paper additionally pays a
-one-time ~140k premium because the EVM prices the first write to a
-zero-valued storage slot at 20,000 gas versus 2,900-5,000 gas for
-overwriting a non-zero slot (EIP-2200/2929) — paper 1 initializes the
-staging structs and queue-length slots that all later papers merely
-overwrite. The apparent 2.9% variation in the mean is purely this
-constant premium amortizing over N, not any dependence of cost on
-workload size.
-
-Panel 2 (cost per operation vs. accumulated state): each data structure
-was pre-seeded with K = 10, 100, 1,000, and 5,000 existing entries, then
-the gas of one further operation was measured. Every operation is exactly
-flat (0.0% variation) — measured O(1) with respect to state size. A
-system that has accumulated years of members and papers performs
-identically to a fresh deployment.
-
-Why the costs are flat (mechanism)
-----------------------------------
-State-changing paths never iterate over stored arrays: membership and
-queue lookups go through constant-time mappings, queue removals use
-swap-and-pop with an address -> index map, and each paper record is a
-fixed set of bounded metadata fields. The only O(n) surfaces are
-read-only whole-array getters, which are off the transaction path and
-have bounded paginated alternatives (queuePage / memberPage).
-
-Implication for capacity
-------------------------
-With ~4.82M gas per published paper and Sepolia-like parameters (30M
-gas/block, ~12.2 s blocks), the chain — not the contracts — sets the
-ceiling: ~6 papers per block, or roughly 43,000 papers per day as a
-theoretical upper bound. Scholarly publishing volumes (a large journal
-handles tens of submissions per day) sit orders of magnitude below this
-ceiling.
+Gas is the EVM's deterministic unit of work — identical on a local node,
+testnet, and mainnet (verified byte-for-byte in gas.csv) — so it is the only
+scalability metric that transfers to a real deployment unchanged, and fees
+and throughput both derive from it. The figure shows cost is flat at scale:
+every paper after the first costs the same 4,817,250 gas (the measured means
+fit mean(N) = 4,817,250 + 139,888/N to within 0.004%, the first paper paying
+a one-time zero-slot initialization premium per EIP-2200), and per-operation
+gas is exactly O(1) (0.0% variation) as pre-existing state grows from 10 to
+5,000 entries.

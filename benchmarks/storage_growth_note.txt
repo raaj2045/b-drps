@@ -1,50 +1,8 @@
-Storage-growth figure: why the graph is linear
-================================================
-(Companion note to figures/storage_growth.* and storage_growth.csv.
-Adapt freely as paper text.)
-
-What is stored on-chain per paper
----------------------------------
-The manuscript itself is never written to the blockchain. Each submission
-stores only a fixed set of metadata fields (the PaperStruct):
-
-  - author name, author e-mail            (short character strings)
-  - paper title                           (short character string)
-  - abstract                              (character string, ~70 bytes in
-                                           the benchmark workload)
-  - IPFS link of the manuscript           (string containing the content
-                                           hash / CID, ~37-59 bytes; the
-                                           full PDF lives off-chain on
-                                           IPFS via Pinata)
-  - reviewer comment, AE comment,
-    editorial decision message            (character strings)
-  - author / reviewer addresses           (20-byte addresses)
-
-Under Solidity's storage layout every field occupies one 32-byte slot;
-strings of 32 bytes or more take one slot plus ceil(len/32) additional
-data slots. Because these fields are bounded metadata — not the document —
-the per-paper footprint is a constant determined by the length of the
-strings, independent of the manuscript's actual size.
-
-Why the total grows linearly
-----------------------------
-Total storage = fixed deployment overhead + N x (constant per-paper
-footprint). With the benchmark workload the marginal footprint is
-~3.0 KiB per published paper (~96 storage slots x 32 bytes), so total
-storage rises as a straight line in N — measured at N = 1, 10, 50, 100
-(storage_growth.csv) and visible as the single line in the figure.
-
-The 3.0 KiB includes the pipeline's write amplification: the workflow
-archives a copy of the metadata record at every approval stage — four
-copies across Main's approvedByEIC / approvedByAE / reviewedByReviewer /
-reviewedByAE arrays plus two in Decision (Publishpaper, ReturnAuthor) —
-i.e. six retained copies per published paper. A single copy of the
-metadata is ~0.5 KiB.
-
-Validation
-----------
-The slot accounting was cross-checked against the EVM: for one full
-publication lifecycle, a debug_traceTransaction count of net SSTOREs
-(slots left non-zero) equals the analytical slot count exactly
-(123 = 123 slots). Storage layout is EVM-deterministic, so these figures
-are network-independent.
+Each paper stores only bounded metadata on-chain — short character strings
+(author, title, ~70-byte abstract, review comments) plus the manuscript's
+IPFS content-hash link, with the PDF itself kept off-chain — so the
+per-paper footprint is a constant ~3.0 KiB (six retained copies across the
+pipeline's archive arrays) and total storage grows linearly in N,
+independent of manuscript size. The slot accounting behind the figure was
+validated exactly against a debug_traceTransaction SSTORE count
+(123 = 123 slots for one publication lifecycle).
