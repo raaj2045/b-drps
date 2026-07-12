@@ -1,8 +1,9 @@
-Each paper stores only bounded metadata on-chain — short character strings
-(author, title, ~70-byte abstract, review comments) plus the manuscript's
-IPFS content-hash link, with the PDF itself kept off-chain — so the
-per-paper footprint is a constant ~3.0 KiB (six retained copies across the
-pipeline's archive arrays) and total storage grows linearly in N,
-independent of manuscript size. The slot accounting behind the figure was
-validated exactly against a debug_traceTransaction SSTORE count
-(123 = 123 slots for one publication lifecycle).
+Only bounded metadata is persisted on-chain for each paper — fixed
+character fields (author, title, abstract, and review comments) together
+with the IPFS content-identifier link of the manuscript, which itself
+resides off-chain — yielding a constant per-paper footprint of
+approximately 3.0 KiB (six copies retained across the pipeline's archival
+arrays) and hence strictly linear growth in total storage, independent of
+manuscript size. The slot-level accounting underlying the figure was
+validated against an SSTORE count obtained via debug_traceTransaction,
+with exact agreement (123 = 123 slots per publication lifecycle).
