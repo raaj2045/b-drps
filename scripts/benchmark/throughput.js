@@ -74,8 +74,13 @@ async function run() {
 
 function renderSection(data) {
   const lines = ["## 3. Throughput\n"];
-  lines.push("### Analytical (Sepolia 30M gas/block, 12s/block)\n");
-  lines.push("Theoretical upper bound assuming a block contains only that operation.\n");
+  lines.push("### Analytical (Sepolia block gas **target** 30M, 12s blocks)\n");
+  lines.push(
+    "Theoretical upper bound assuming a block contains only that operation. " +
+    "30M gas is the EIP-1559 block **target**; blocks may transiently expand " +
+    "to the 60M hard limit (2x target), but the base-fee mechanism regulates " +
+    "sustained usage back to the target, so the target is the correct basis " +
+    "for a sustained-throughput ceiling (burst ceiling is 2x these figures).\n");
   lines.push("| Operation | Gas | Ops/block | TPS |");
   lines.push("|---|---:|---:|---:|");
   for (const [k, v] of Object.entries(data.analytical)) {
