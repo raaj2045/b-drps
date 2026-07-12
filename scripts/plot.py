@@ -1,13 +1,16 @@
 """
 Render comparison graphs from the benchmark CSVs.
 
-Inputs  (read from benchmarks/):  latency.csv, storage_growth.csv
-Outputs (written to benchmarks/figures/): latency_decomposition, storage_growth
+Inputs  (read from benchmarks/):  latency.csv, storage_growth.csv,
+                                  scalability.csv, state_growth.csv
+Outputs (written to benchmarks/figures/): latency_decomposition,
+                                          storage_growth, scalability
                                           (png + pdf each)
 
-Only these two earn a figure: the latency component composition and the
-two-trend storage growth cannot be read from a table. Everything else in
-benchmarks/ is communicated by its CSV/report table directly.
+Only these earn a figure: the latency component composition, the storage
+growth trend, and the constant-cost scalability panels cannot be read from
+a table at a glance. Everything else in benchmarks/ is communicated by its
+CSV/report table directly.
 
 Each figure is also written as .pdf for vector embedding in LaTeX.
 Run:  python3 scripts/plot.py   (or `npm run benchmark:plot`)
@@ -160,10 +163,74 @@ def plot_latency_decomposition():
     _save(fig, "latency_decomposition")
 
 
+def plot_scalability():
+    """Two single-axis panels showing the scalability headline: per-paper /
+    per-operation cost is flat while workload (N) and accumulated state (K)
+    grow by orders of magnitude. Gas is deterministic, so flat here is flat
+    on any network. Palette validated (validate_palette.js); series carry
+    distinct markers + direct labels as secondary encoding."""
+    scal_path = DATA_DIR / "scalability.csv"
+    growth_path = DATA_DIR / "state_growth.csv"
+    if not (scal_path.exists() and growth_path.exists()):
+        print("  (skip scalability: scalability.csv / state_growth.csv not found)")
+        return
+
+    srows = sorted(_authoritative(_read_csv(scal_path)), key=lambda r: int(r["N"]))
+    N = [int(r["N"]) for r in srows]
+    per_paper_m = [int(r["meanGasPerPaper"]) / 1e6 for r in srows]
+
+    grows = sorted(_authoritative(_read_csv(growth_path)), key=lambda r: int(r["K"]))
+    K = [int(r["K"]) for r in grows]
+    ops = [c for c in grows[0].keys() if c not in ("K", "network")]
+
+    # Flatness metrics (quoted in the paper text).
+    def spread(vals):
+        m = sum(vals) / len(vals)
+        return 100 * (max(vals) - min(vals)) / m
+    print(f"  scalability flatness: gas/paper varies {spread(per_paper_m):.1f}% "
+          f"over N={N[0]}..{N[-1]}")
+    for op in ops:
+        vals = [int(r[op]) for r in grows]
+        print(f"    {op}: {spread(vals):.1f}% over K={K[0]}..{K[-1]}")
+
+    palette = ["#4C72B0", "#DD8452", "#6F5BB5", "#55A868", "#C44E52"]
+    markers = ["o", "s", "^", "D", "v"]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.2))
+
+    ax1.plot(N, per_paper_m, "o-", color=palette[0])
+    ax1.set_xscale("log")
+    ax1.set_xlabel("Papers processed (N)")
+    ax1.set_ylabel("Mean gas per paper (millions)")
+    ax1.set_ylim(0, max(per_paper_m) * 1.25)
+    ax1.set_title("Cost per paper vs. workload size")
+
+    for i, op in enumerate(ops):
+        vals = [int(r[op]) / 1e3 for r in grows]
+        ax2.plot(K, vals, marker=markers[i], color=palette[i],
+                 linewidth=1.5, markersize=5, label=op)
+        ax2.annotate(op, (K[-1], vals[-1]), xytext=(6, 0),
+                     textcoords="offset points", fontsize=8,
+                     va="center", color="#444444")
+    ax2.set_xscale("log")
+    ax2.set_xlabel("Existing entries in state (K)")
+    ax2.set_ylabel("Gas of one more operation (thousands)")
+    ax2.set_ylim(0, max(int(r[op]) / 1e3 for r in grows for op in ops) * 1.25)
+    ax2.set_title("Cost per operation vs. accumulated state")
+    ax2.margins(x=0.25)
+    ax2.legend(frameon=False, fontsize=8, ncol=3, loc="upper center",
+               bbox_to_anchor=(0.5, -0.22))
+
+    fig.suptitle("Costs stay constant as the system scales", y=1.02, fontsize=13)
+    fig.tight_layout()
+    _save(fig, "scalability")
+
+
 def main():
     print(f"reading from {DATA_DIR.relative_to(ROOT)}/")
     plot_latency_decomposition()
     plot_storage_growth()
+    plot_scalability()
     print(f"figures in {FIG_DIR.relative_to(ROOT)}/")
 
 

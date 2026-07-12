@@ -1,0 +1,10 @@
+Gas consumption is adopted as the scalability metric because it is
+deterministic across execution environments (identical per-operation values
+were observed on the local network and on forked Sepolia state) and because
+both transaction fees and achievable throughput derive from it, making it
+the only measure that transfers unchanged to a production deployment. The
+results indicate constant per-unit cost at scale: mean gas per paper fits
+mean(N) = 4,817,250 + 139,888/N to within 0.004%, corresponding to a
+constant marginal cost with a one-time storage-initialization premium on
+the first submission (EIP-2200), while per-operation gas remains invariant
+(0.0% variation) as pre-existing state grows from 10 to 5,000 entries.
