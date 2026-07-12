@@ -1,9 +1,11 @@
-For each paper, only its metadata is stored on-chain — the author, title,
-abstract, and review comments, together with the IPFS content identifier
-(CID) that references the manuscript, which is stored off-chain — so each
-paper occupies a fixed amount of storage (approximately 3.0 KiB, of which
-six copies are retained across the pipeline's archival arrays) and total
-storage grows linearly with the number of papers, independent of
-manuscript size. The slot-level accounting underlying the figure was
-validated against an SSTORE count obtained via debug_traceTransaction,
-with exact agreement (123 = 123 slots per publication lifecycle).
+For each paper, only its metadata is stored on-chain — the author name
+(24 characters), e-mail address (29), title (120), abstract (1,500),
+reviewer report (2,500), editor report (1,000), and decision letter (300),
+together with the 80-character IPFS gateway link whose content identifier
+(CID) references the manuscript, which itself is stored off-chain — so each
+paper occupies a fixed ~33 KiB of storage (six copies retained across the
+pipeline's archival arrays) and total storage grows linearly with the
+number of papers, independent of manuscript size. The slot-level accounting
+underlying the figure was validated against an SSTORE count obtained via
+debug_traceTransaction, with exact agreement (1,167 = 1,167 slots per
+publication lifecycle).

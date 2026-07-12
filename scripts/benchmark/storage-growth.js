@@ -26,12 +26,66 @@
  */
 const hre = require("hardhat");
 const {
-  fmtGas, setMining, deployAll, registerRolesWithGas, runPipelineOnce,
+  fmtGas, setMining, deployAll, registerRolesWithGas,
   writeSection, writeCsv,
 } = require("./lib");
 
 const STORAGE_GROWTH_NS = [1, 10, 50, 100];
 const SLOT_BYTES = 32;
+
+// Realistic workload: representative field lengths for a genuine submission
+// (typical full name, article title of 10-15 words, a 200-250-word abstract,
+// a Pinata gateway URL with a 46-char CIDv0, a ~400-word referee report, a
+// ~150-word editor report, and a short decision letter). Deterministic
+// filler text sliced to exact length, so the footprint is reproducible.
+const FILLER =
+  "This synthetic text stands in for realistic submission content and is " +
+  "repeated to the documented field length. ";
+function filler(len) {
+  return FILLER.repeat(Math.ceil(len / FILLER.length)).slice(0, len);
+}
+const WORKLOAD = {
+  authorName: filler(24),
+  email: "corresponding.author@university-example.edu".slice(0, 29),
+  title: filler(120),
+  abstract: filler(1500),
+  ipfsLink: "https://gateway.pinata.cloud/ipfs/Qm" + "a".repeat(44), // 80 chars
+  reviewerComment: filler(2500),
+  aeComment: filler(1000),
+  decisionMessage: filler(300),
+};
+const WORKLOAD_CHARS = {
+  authorName: 24, email: 29, title: 120, abstract: 1500, ipfsLink: 80,
+  reviewerComment: 2500, aeComment: 1000, decisionMessage: 300,
+};
+
+// One full publication lifecycle with the realistic workload. `record`
+// collects {hash, to} pairs when tracing; pass null for plain runs.
+async function runLifecycle(ctx, record) {
+  const { main, decision, eic, ae, reviewer, author } = ctx;
+  const mainAddr = await main.getAddress();
+  const decisionAddr = await decision.getAddress();
+  const w = WORKLOAD;
+
+  async function send(addr, promise) {
+    const tx = await promise;
+    await tx.wait();
+    if (record) record.push({ hash: tx.hash, to: addr });
+  }
+  await send(mainAddr, main.connect(author).getPaperInfo(
+    w.authorName, w.email, w.abstract, w.title, w.ipfsLink, author.address));
+  await send(mainAddr, main.connect(author).sendToEIC());
+  await send(mainAddr, main.connect(eic).EICapproval(true));
+  await send(mainAddr, main.connect(ae).AEapproval(true));
+  await send(mainAddr, main.connect(reviewer).Reviewerapproval(
+    true, w.reviewerComment, reviewer.address));
+  await send(mainAddr, main.connect(ae).ReviewedByAE(true, w.aeComment));
+  await send(decisionAddr, decision.connect(eic).getPaperInfo(
+    w.authorName, w.email, w.abstract, w.title, w.ipfsLink,
+    w.reviewerComment, w.aeComment, author.address));
+  await send(decisionAddr, decision.connect(eic).EICDecision(
+    true, w.decisionMessage));
+}
 
 // ---- Solidity storage-layout slot accounting -----------------------------
 
@@ -86,7 +140,9 @@ function slotsForMember(m) {
 async function walkQueue(contract, id, slotsFor) {
   const len = Number(await contract.queueLength(id));
   let slots = len > 0 ? 1 : 0; // array length slot (occupied while non-empty)
-  const PAGE = 50;
+  // With realistic ~2.5 KB review strings a 50-item page exceeds eth_call's
+  // gas cap -- itself a demonstration of why page sizes must stay modest.
+  const PAGE = 10;
   for (let offset = 0; offset < len; offset += PAGE) {
     const page = await contract.queuePage(id, offset, PAGE);
     for (const p of page) slots += slotsFor(p);
@@ -136,7 +192,7 @@ async function accountAuth(auth) {
   for (const pending of [false, true]) {
     const len = Number(await auth.memberCount(pending));
     if (len > 0) slots += 1; // array length slot
-    const PAGE = 50;
+    const PAGE = 10;
     for (let offset = 0; offset < len; offset += PAGE) {
       const page = await auth.memberPage(pending, offset, PAGE);
       for (const m of page) {
@@ -178,38 +234,11 @@ async function traceNetSlots(txHashes) {
 async function runTracedLifecycle() {
   const ctx = await deployAll();
   await registerRolesWithGas(ctx);
-  const { main, decision, eic, ae, reviewer, author } = ctx;
-  const mainAddr = await main.getAddress();
-  const decisionAddr = await decision.getAddress();
-
   const txs = [];
-  async function send(target, addr, promise) {
-    const tx = await promise;
-    await tx.wait();
-    txs.push({ hash: tx.hash, to: addr });
-  }
-  await send(main, mainAddr, main.connect(author).getPaperInfo(
-    "Author 0", "au0@x.com",
-    "An abstract describing the paper contents for benchmarking purposes.",
-    "Benchmark Paper 0", "https://gateway.pinata.cloud/ipfs/Qm0", author.address));
-  await send(main, mainAddr, main.connect(author).sendToEIC());
-  await send(main, mainAddr, main.connect(eic).EICapproval(true));
-  await send(main, mainAddr, main.connect(ae).AEapproval(true));
-  await send(main, mainAddr, main.connect(reviewer).Reviewerapproval(
-    true, "Looks good. Minor revisions suggested.", reviewer.address));
-  await send(main, mainAddr, main.connect(ae).ReviewedByAE(true, "Concur with reviewer."));
-  await send(decision, decisionAddr, decision.connect(eic).getPaperInfo(
-    "Author 0", "au0@x.com",
-    "An abstract describing the paper contents for benchmarking purposes.",
-    "Benchmark Paper 0", "https://gateway.pinata.cloud/ipfs/Qm0",
-    "Looks good. Minor revisions suggested.", "Concur with reviewer.",
-    author.address));
-  await send(decision, decisionAddr, decision.connect(eic).EICDecision(
-    true, "Accepted for publication."));
-
+  await runLifecycle(ctx, txs);
   const traced = await traceNetSlots(txs);
   const analytical =
-    (await accountMain(main)).slots + (await accountDecision(decision)).slots;
+    (await accountMain(ctx.main)).slots + (await accountDecision(ctx.decision)).slots;
   return { traced, analytical };
 }
 
@@ -227,7 +256,7 @@ async function run() {
     const ctx = await deployAll();
     await registerRolesWithGas(ctx);
     for (let i = 0; i < N; i++) {
-      await runPipelineOnce(ctx, i);
+      await runLifecycle(ctx, null);
       if ((i + 1) % 50 === 0) console.log(`    N=${N}: ${i + 1}/${N} papers`);
     }
     const m = await accountMain(ctx.main);
@@ -269,6 +298,12 @@ function renderSection(data) {
     "paginated getters) using Solidity's storage-layout rules — inline vs. " +
     "long strings, array length slots, live index-map entries, and Auth's " +
     "struct-mirror mappings. Bytes = slots × 32.\n"
+  );
+  lines.push(
+    "Workload: realistic field lengths per submission — " +
+    Object.entries(WORKLOAD_CHARS)
+      .map(([k, v]) => `${k} ${v}`)
+      .join(" chars, ") + " chars.\n"
   );
   lines.push(
     `> **Cross-checked against the EVM.** For one full lifecycle, a ` +
