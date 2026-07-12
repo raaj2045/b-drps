@@ -24,6 +24,12 @@ for the response-to-reviewers letter.
 | sc10-pagination | Bounded paginated getters (Main/Decision/Auth) close OWASP SC10 | **R3** (security analysis acts on its findings), **R4** (DoS surface removed without ABI break) |
 
 ### Changed
+- **Third figure: `scalability`** — two single-axis panels showing costs
+  staying constant as the system scales: mean gas/paper flat (varies 2.9%,
+  dominated by the N=1 point) over N = 1→500 papers, and per-operation gas
+  exactly flat (0.0%) as pre-existing state grows K = 10→5,000. Rendered
+  from existing `scalability.csv` / `state_growth.csv`; palette
+  CVD-validated with per-series markers + direct labels.
 - **Figure set pruned to the two that carry non-tabular information**:
   `latency_decomposition` (component composition of confirmation latency)
   and `storage_growth` (linear total vs. flat per-paper trend). The gas
