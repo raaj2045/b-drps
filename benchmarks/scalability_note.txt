@@ -1,0 +1,53 @@
+Scalability figure: why gas is the metric, and what the graph shows
+====================================================================
+(Companion note to figures/scalability.* — data from scalability.csv and
+state_growth.csv. Adapt freely as paper text.)
+
+Why gas is the right scalability metric
+---------------------------------------
+Gas is the EVM's own unit of computational and storage work, and it is
+deterministic: the same transaction costs the same gas on a local node, a
+testnet, or mainnet (verified in this work — per-operation gas is
+byte-for-byte identical between the local network and forked Sepolia
+state; see gas.csv). Wall-clock measurements on a development node
+reflect the test harness, not the network, so gas is the only
+scalability metric that transfers to a real deployment unchanged.
+Everything a user experiences at scale derives from it: transaction fees
+are gas x gas-price, and throughput is block-gas-limit / gas-per-
+operation. If gas per operation stays constant as the system grows, cost
+and throughput stay constant too.
+
+What the two panels show
+------------------------
+Panel 1 (cost per paper vs. workload size): the full editorial pipeline
+(submission -> EiC -> AE -> reviewer -> final decision) was executed for
+N = 1, 10, 50, 100, and 500 papers. Mean gas per paper varies only 2.9%
+across the sweep — and under 0.5% from N = 10 onward; the N = 1 point is
+marginally higher because first writes to empty storage structures cost
+more than subsequent ones. Processing the 500th paper costs the same as
+processing the 10th.
+
+Panel 2 (cost per operation vs. accumulated state): each data structure
+was pre-seeded with K = 10, 100, 1,000, and 5,000 existing entries, then
+the gas of one further operation was measured. Every operation is exactly
+flat (0.0% variation) — measured O(1) with respect to state size. A
+system that has accumulated years of members and papers performs
+identically to a fresh deployment.
+
+Why the costs are flat (mechanism)
+----------------------------------
+State-changing paths never iterate over stored arrays: membership and
+queue lookups go through constant-time mappings, queue removals use
+swap-and-pop with an address -> index map, and each paper record is a
+fixed set of bounded metadata fields. The only O(n) surfaces are
+read-only whole-array getters, which are off the transaction path and
+have bounded paginated alternatives (queuePage / memberPage).
+
+Implication for capacity
+------------------------
+With ~4.82M gas per published paper and Sepolia-like parameters (30M
+gas/block, ~12.2 s blocks), the chain — not the contracts — sets the
+ceiling: ~6 papers per block, or roughly 43,000 papers per day as a
+theoretical upper bound. Scholarly publishing volumes (a large journal
+handles tens of submissions per day) sit orders of magnitude below this
+ceiling.
