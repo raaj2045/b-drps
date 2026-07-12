@@ -21,11 +21,17 @@ What the two panels show
 ------------------------
 Panel 1 (cost per paper vs. workload size): the full editorial pipeline
 (submission -> EiC -> AE -> reviewer -> final decision) was executed for
-N = 1, 10, 50, 100, and 500 papers. Mean gas per paper varies only 2.9%
-across the sweep — and under 0.5% from N = 10 onward; the N = 1 point is
-marginally higher because first writes to empty storage structures cost
-more than subsequent ones. Processing the 500th paper costs the same as
-processing the 10th.
+N = 1, 10, 50, 100, and 500 papers. The marginal cost per paper is
+constant: the measured means fit mean(N) = 4,817,250 + 139,888/N gas to
+within 174 gas (0.004%) at every N. That is, every paper after the first
+costs exactly the same 4.82M gas; the first paper additionally pays a
+one-time ~140k premium because the EVM prices the first write to a
+zero-valued storage slot at 20,000 gas versus 2,900-5,000 gas for
+overwriting a non-zero slot (EIP-2200/2929) — paper 1 initializes the
+staging structs and queue-length slots that all later papers merely
+overwrite. The apparent 2.9% variation in the mean is purely this
+constant premium amortizing over N, not any dependence of cost on
+workload size.
 
 Panel 2 (cost per operation vs. accumulated state): each data structure
 was pre-seeded with K = 10, 100, 1,000, and 5,000 existing entries, then
